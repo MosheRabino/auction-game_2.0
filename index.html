@@ -1,0 +1,413 @@
+    <!DOCTYPE html>
+    <html lang="he" dir="rtl">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>מכירה פומבית</title>
+        <style>
+            :root {
+                --bg-color: #1a1a2e; --card-bg: #162447; --accent-color: #00d2fc;
+                --text-color: #ffffff; --muted-text: #b0b0b0; --success-color: #4cd137; --danger-color: #e84118;
+            }
+            * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', sans-serif; }
+            body { background-color: var(--bg-color); color: var(--text-color); padding: 15px; display: flex; flex-direction: column; align-items: center; min-height: 100vh; }
+            header { width: 100%; max-width: 600px; text-align: center; margin-bottom: 20px; }
+            h1 { color: var(--accent-color); font-size: 1.8rem; }
+            .container { width: 100%; max-width: 600px; }
+            .panel { background-color: var(--card-bg); border-radius: 12px; padding: 20px; box-shadow: 0 8px 24px rgba(0,0,0,0.2); margin-bottom: 20px; }
+            h2 { margin-bottom: 15px; border-bottom: 2px solid rgba(255,255,255,0.1); padding-bottom: 10px; font-size: 1.2rem; }
+            .setup-row { display: flex; flex-direction: column; gap: 8px; margin-bottom: 15px; }
+            .name-input, select { width: 100%; background: rgba(255, 255, 255, 0.05); border: 2px solid rgba(255, 255, 255, 0.1); padding: 12px; border-radius: 6px; color: white; font-size: 1rem; outline: none; }
+            select option { background: var(--card-bg); color: white; }
+            .btn { background-color: var(--accent-color); color: #000; border: none; padding: 12px 24px; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 1rem; width: 100%; margin-bottom: 10px; }
+            .btn:disabled { background-color: #555 !important; color: #aaa !important; }
+            .btn-secondary { background-color: #34495e; color: white; font-size: 0.9rem; padding: 8px 16px; margin-bottom: 15px; width: auto; align-self: center; }
+            
+            .teams-toggle-list { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 15px 0; max-height: 200px; overflow-y: auto; background: rgba(0,0,0,0.2); padding: 10px; border-radius: 6px; }
+            .team-item { display: flex; align-items: center; gap: 8px; font-size: 0.95rem; cursor: pointer; }
+            .team-item input { width: 18px; height: 18px; accent-color: var(--accent-color); }
+            .toggle-all-btn { background: none; border: none; color: var(--accent-color); cursor: pointer; text-decoration: underline; font-size: 0.9rem; text-align: right; margin-bottom: 5px; }
+
+            .arena { background: rgba(0,0,0,0.3); border-radius: 8px; padding: 20px; text-align: center; border: 1px dashed rgba(255,255,255,0.2); margin-bottom: 20px; display: flex; flex-direction: column; }
+            .turn-indicator { font-size: 1.2rem; font-weight: bold; color: #f1c40f; margin-bottom: 15px; background: rgba(241, 196, 15, 0.1); padding: 8px 15px; border-radius: 6px; display: inline-block; align-self: center; }
+            .lot-name { font-size: 2rem; color: #ffffff; font-weight: bold; margin-bottom: 2px; }
+            .lot-team { font-size: 0.95rem; color: var(--accent-color); margin-bottom: 20px; }
+            .bid-slider-container { background: rgba(255,255,255,0.05); padding: 15px; border-radius: 8px; margin: 20px 0; }
+            .slider-row { display: flex; align-items: center; gap: 10px; }
+            .range-slider { flex-grow: 1; accent-color: var(--accent-color); }
+            .slider-val { font-size: 1.4rem; font-weight: bold; color: var(--success-color); min-width: 60px; }
+            .action-btns { display: flex; gap: 12px; }
+            .btn-pass { background-color: var(--danger-color); color: white; }
+            .btn-continue { background-color: var(--success-color); color: white; }
+            .teams-dashboard { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; background: rgba(0, 0, 0, 0.15); padding: 15px; border-radius: 12px; }
+            .player-column { display: flex; flex-direction: column; background: rgba(255,255,255,0.02); padding: 10px; border-radius: 8px; text-align: right; }
+            .player-column.active-border { border: 1px solid var(--accent-color); }
+            .budget { color: var(--success-color); font-weight: bold; font-size: 1.1rem; margin-bottom: 8px; }
+            .roster-list { list-style: none; }
+            .roster-list li { font-size: 0.85rem; padding: 6px 0; border-bottom: 1px solid rgba(255, 255, 255, 0.05); color: var(--muted-text); word-break: break-all; }
+            .summary-layout { text-align: center; background: var(--card-bg); border-radius: 16px; padding: 30px; border: 2px solid var(--accent-color); }
+            .hidden { display: none !important; }
+        </style>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    </head>
+    <body>
+
+        <header>
+            <h1>🏆 מכירה פומבית - בחירת ליגה</h1>
+        </header>
+
+        <div class="container">
+
+            <div class="panel" id="setupPanel">
+                <h2>הגדרת שחקנים</h2>
+                <div class="setup-row">
+                    <input type="text" id="p1Input" class="name-input" maxlength="12" value="שחקן 1">
+                    <input type="text" id="p2Input" class="name-input" maxlength="12" value="שחקן 2">
+                </div>
+
+                <h2>בחר ליגה</h2>
+                <div class="setup-row">
+                    <select id="leagueSelect" onchange="loadLeagueData()">
+                        <option value="">טוען ליגות מתוך Leagues.json...</option>
+                    </select>
+                </div>
+
+                <h2 style="margin-top: 15px;">קבוצות</h2>
+                <button class="toggle-all-btn" onclick="toggleAllTeams()">סמן/בטל הכל</button>
+                <div class="teams-toggle-list" id="teamsCheckboxes">
+                    </div>
+
+                <button class="btn" id="startBtn" onclick="startGame()">גמרנו, התחל משחק! 🚀</button>
+            </div>
+
+            <div class="game-layout hidden" id="gamePanel">
+                <button class="btn btn-secondary" onclick="resetToHome()">🏠 חזרה לעמוד הראשי</button>
+
+                <div class="arena">
+                    <div class="turn-indicator" id="turnDisplay">-</div>
+                    <div class="lot-name" id="currentLot">-</div>
+                    <div class="lot-team" id="currentLotTeam">-</div>
+                    
+                    <div style="margin: 15px 0; font-size: 1.1rem;">
+                        הצעה מובילה: <strong id="bidDisplay" style="color: var(--accent-color); font-size: 1.4rem;">$1</strong> 
+                        <span id="bidder" style="color: var(--muted-text);">(מוביל: -)</span>
+                    </div>
+
+                    <div class="bid-slider-container">
+                        <div class="slider-row">
+                            <span id="minRangeLabel">$2</span>
+                            <input type="range" id="bidRange" class="range-slider" min="2" max="20" value="2" oninput="document.getElementById('sliderAmountDisplay').innerText = '$'+this.value">
+                            <span id="maxRangeLabel">$20</span>
+                            <div class="slider-val" id="sliderAmountDisplay">$2</div>
+                        </div>
+                    </div>
+                    
+                    <div class="action-btns">
+                        <button class="btn" id="submitBidBtn" onclick="handleAction('bid')">אישור הצעה</button>
+                        <button class="btn btn-pass" id="passBtn" onclick="handleAction('pass')">ויתור</button>
+                    </div>
+                </div>
+
+                <div class="teams-dashboard" id="screenshotArea">
+                    <div class="player-column" id="p1Col">
+                        <span id="p1NameDisplay" style="font-weight:bold; font-size:1.1rem;">שחקן 1</span>
+                        <span class="budget" id="p1Money">$20</span>
+                        <ul class="roster-list" id="p1Roster"></ul>
+                    </div>
+                    <div class="player-column" id="p2Col">
+                        <span id="p2NameDisplay" style="font-weight:bold; font-size:1.1rem;">שחקן 2</span>
+                        <span class="budget" id="p2Money">$20</span>
+                        <ul class="roster-list" id="p2Roster"></ul>
+                    </div>
+                </div>
+            </div>
+
+            <div class="summary-layout hidden" id="summaryPanel">
+                <h2>🏁 המכירה הפומבית הסתיימה!</h2>
+                <div style="margin: 20px 0; font-size: 1.2rem;" id="winnerDeclaration"></div>
+                
+                <div id="finalTeamsContainer" style="margin-bottom: 25px;"></div>
+                
+                <button class="btn" id="shareBtn" onclick="shareScreenshot()" style="background-color: var(--success-color); color: black;">📸 שתף צילום מסך</button>
+                <button class="btn btn-secondary" onclick="location.reload()" style="display: block; margin: 10px auto;">משחק חדש 🔄</button>
+            </div>
+
+        </div>
+
+        <script>
+            let loadedPlayers = [];   
+            let filteredPlayers = []; 
+            let fileCache = {};       
+
+            let gameState = {
+                p1Name: "", p2Name: "", p1M: 20, p2M: 20, p1R: [], p2R: [],
+                currentBid: 1, leadingBidder: 'p1', currentTurn: 'p1', lotIndex: 0, isInitial: true
+            };
+
+            window.onload = async function() {
+                const select = document.getElementById('leagueSelect');
+                try {
+                    const indexResponse = await fetch('Leagues.json');
+                    if (!indexResponse.ok) throw new Error("קובץ Leagues.json לא נמצא.");
+                    
+                    const jsonFiles = await indexResponse.json();
+                    select.innerHTML = '';
+                    
+                    for (let fileName of jsonFiles) {
+                        try {
+                            const response = await fetch(fileName);
+                            if (!response.ok) continue;
+                            const data = await response.json();
+                            fileCache[fileName] = data;
+
+                            const leagueName = data[0].laegue || data[0].league || fileName;
+                            select.innerHTML += `<option value="${fileName}">${leagueName}</option>`;
+                        } catch (err) {
+                            console.error(`שגיאה בטעינת קובץ: ${fileName}`, err);
+                        }
+                    }
+
+                    if(select.options.length > 0) {
+                        loadLeagueData();
+                    } else {
+                        select.innerHTML = '<option value="">לא נמצאו ליגות תקינות</option>';
+                    }
+                } catch (err) {
+                    alert("שגיאה קריטית: ודא שקיים קובץ בשם 'Leagues.json' באותה התיקייה בדיוק.");
+                    console.error(err);
+                }
+            };
+
+            function loadLeagueData() {
+                const selectedFile = document.getElementById('leagueSelect').value;
+                const fullData = fileCache[selectedFile];
+                if (!fullData) return;
+
+                loadedPlayers = fullData.filter(item => item.name && item.team);
+                generateTeamCheckboxes();
+            }
+
+            function generateTeamCheckboxes() {
+                const container = document.getElementById('teamsCheckboxes');
+                container.innerHTML = '';
+                const uniqueTeams = [...new Set(loadedPlayers.map(p => p.team))].filter(Boolean);
+                uniqueTeams.sort();
+
+                uniqueTeams.forEach(team => {
+                    container.innerHTML += `
+                        <label class="team-item">
+                            <input type="checkbox" class="team-cb" value="${team}" checked>
+                            <span>${team}</span>
+                        </label>
+                    `;
+                });
+            }
+
+            function toggleAllTeams() {
+                const checkboxes = document.querySelectorAll('.team-cb');
+                const allChecked = Array.from(checkboxes).every(cb => cb.checked);
+                checkboxes.forEach(cb => cb.checked = !allChecked);
+            }
+
+            function resetToHome() {
+                if(confirm("האם אתה בטוח שברצונך לעזוב את המשחק הנוכחי ולחזור למסך הראשי?")) {
+                    location.reload();
+                }
+            }
+
+           function startGame() {
+                    gameState.p1Name = document.getElementById('p1Input').value.trim() || "שחקן 1";
+                    gameState.p2Name = document.getElementById('p2Input').value.trim() || "שחקן 2";
+                    
+                    const checkedTeams = Array.from(document.querySelectorAll('.team-cb'))
+                                            .filter(cb => cb.checked)
+                                            .map(cb => cb.value);
+
+                    filteredPlayers = loadedPlayers.filter(p => checkedTeams.includes(p.team));
+
+                    if (filteredPlayers.length < 5) {
+                        alert("חובה לבחור קבוצות שמכילות לפחות 5 שחקנים ביחד!");
+                        return;
+                    }
+
+                    // 🚀 השורה החדשה: מעדכנת את הכותרת בראש העמוד לשם הליגה שנבחרה!
+                    const selectedLeagueText = document.getElementById('leagueSelect').options[document.getElementById('leagueSelect').selectedIndex].text;
+                    document.querySelector('header h1').innerText = `🏆 ${selectedLeagueText}`;
+
+                    filteredPlayers.sort(() => Math.random() - 0.5);
+                    document.getElementById('setupPanel').classList.add('hidden');
+                    document.getElementById('gamePanel').classList.remove('hidden');
+                    renderUI();
+            }
+
+            function handleAction(type) {
+                if (type === 'bid') {
+                    const amount = parseInt(document.getElementById('bidRange').value);
+                    gameState.currentBid = amount;
+                    gameState.leadingBidder = gameState.currentTurn;
+                    gameState.isInitial = false;
+                    gameState.currentTurn = gameState.currentTurn === 'p1' ? 'p2' : 'p1';
+                } 
+                else if (type === 'pass') {
+                    if (gameState.isInitial && gameState.currentTurn === gameState.leadingBidder) {
+                        gameState.isInitial = false;
+                        gameState.currentTurn = gameState.currentTurn === 'p1' ? 'p2' : 'p1';
+                    } else {
+                        const winner = gameState.leadingBidder;
+                        const cost = gameState.currentBid;
+                        const item = filteredPlayers[gameState.lotIndex % filteredPlayers.length];
+                        
+                        // 🚀 עדכון סגנון התצוגה של השחקן ברשימה לבקשתך
+                        const text = `${item.name} - ${item.team} ($${cost})`;
+
+                        if (winner === 'p1') {
+                            gameState.p1M -= cost;
+                            gameState.p1R.push(text);
+                        } else {
+                            gameState.p2M -= cost;
+                            gameState.p2R.push(text);
+                        }
+
+                        gameState.lotIndex++;
+                        gameState.currentBid = 1;
+                        gameState.leadingBidder = gameState.lotIndex % 2 === 0 ? 'p1' : 'p2';
+                        gameState.currentTurn = gameState.leadingBidder;
+                        gameState.isInitial = true;
+                    }
+                }
+                renderUI();
+            }
+
+            function renderUI() {
+                if ((gameState.p1R.length >= 5 && gameState.p2R.length >= 5) || gameState.lotIndex >= filteredPlayers.length) {
+                    document.getElementById('gamePanel').classList.add('hidden');
+                    document.getElementById('summaryPanel').classList.remove('hidden');
+                    
+                    let winText = "";
+                    if (gameState.p1M > gameState.p2M) winText = `🏆 המנצח הוא <strong>${gameState.p1Name}</strong> עם עודף של $${gameState.p1M}!`;
+                    else if (gameState.p2M > gameState.p1M) winText = `🏆 המנצח הוא <strong>${gameState.p2Name}</strong> עם עודף של $${gameState.p2M}!`;
+                    else winText = "🤝 תיקו בתקציב החסר!";
+                    
+                    document.getElementById('winnerDeclaration').innerHTML = winText;
+
+                    // מעתיק את לוח התוצאות הסופי למסך הסיום כדי שנוכל לצלם אותו
+                    const dashboard = document.getElementById('screenshotArea');
+                    document.getElementById('finalTeamsContainer').appendChild(dashboard.cloneNode(true));
+                    return;
+                }
+
+                document.getElementById('p1NameDisplay').innerText = gameState.p1Name;
+                document.getElementById('p2NameDisplay').innerText = gameState.p2Name;
+                document.getElementById('p1Money').innerText = `$${gameState.p1M}`;
+                document.getElementById('p2Money').innerText = `$${gameState.p2M}`;
+
+                document.getElementById('p1Col').className = gameState.currentTurn === 'p1' ? 'player-column active-border' : 'player-column';
+                document.getElementById('p2Col').className = gameState.currentTurn === 'p2' ? 'player-column active-border' : 'player-column';
+
+                const currentLot = filteredPlayers[gameState.lotIndex % filteredPlayers.length];
+                document.getElementById('currentLot').innerText = currentLot.name;
+                document.getElementById('currentLotTeam').innerText = currentLot.team;
+
+                document.getElementById('bidDisplay').innerText = `$${gameState.currentBid}`;
+                const leaderName = gameState.leadingBidder === 'p1' ? gameState.p1Name : gameState.p2Name;
+                document.getElementById('bidder').innerText = `(מוביל: ${leaderName})`;
+
+                const activeName = gameState.currentTurn === 'p1' ? gameState.p1Name : gameState.p2Name;
+                document.getElementById('turnDisplay').innerText = `👉 תור: ${activeName}`;
+
+                updateRosterList('p1Roster', gameState.p1R);
+                updateRosterList('p2Roster', gameState.p2R);
+
+                const myMoney = gameState.currentTurn === 'p1' ? gameState.p1M : gameState.p2M;
+                const myCount = gameState.currentTurn === 'p1' ? gameState.p1R.length : gameState.p2R.length;
+                
+                const maxBid = myMoney - (5 - myCount - 1);
+                const minBid = gameState.currentBid + 1;
+
+                const slider = document.getElementById('bidRange');
+                const submitBtn = document.getElementById('submitBidBtn');
+                const passBtn = document.getElementById('passBtn');
+
+                if (gameState.isInitial && gameState.currentTurn === gameState.leadingBidder) {
+                    passBtn.innerText = "פתח ב-$1";
+                    passBtn.className = "btn btn-continue";
+                } else {
+                    passBtn.innerText = "ויתור ❌";
+                    passBtn.className = "btn btn-pass";
+                }
+
+                if (minBid > maxBid) {
+                    slider.disabled = true;
+                    submitBtn.disabled = true;
+                    document.getElementById('sliderAmountDisplay').innerText = "אין תקציב";
+                } else {
+                    slider.disabled = false;
+                    submitBtn.disabled = false;
+                    slider.min = minBid;
+                    slider.max = maxBid;
+                    slider.value = minBid;
+                    document.getElementById('minRangeLabel').innerText = `$${minBid}`;
+                    document.getElementById('maxRangeLabel').innerText = `$${maxBid}`;
+                    document.getElementById('sliderAmountDisplay').innerText = `$${minBid}`;
+                }
+            }
+
+            function updateRosterList(id, arr) {
+                const el = document.getElementById(id);
+                el.innerHTML = '';
+                for(let i=1; i<=5; i++) {
+                    el.innerHTML += `<li>${i}. ${arr[i-1] || '-'}</li>`;
+                }
+            }
+
+            // 🚀 פונקציית צילום מסך ושיתוף חכמה
+            async function shareScreenshot() {
+                const targetElement = document.querySelector("#finalTeamsContainer .teams-dashboard");
+                const shareBtn = document.getElementById('shareBtn');
+                shareBtn.innerText = "מכין תמונה... ⏳";
+                shareBtn.disabled = true;
+
+                try {
+                    // הפיכת האלמנט הויזואלי לתמונת Canvas
+                    const canvas = await html2canvas(targetElement, {
+                        backgroundColor: "#162447",
+                        scale: 2 // משפר את איכות וחדות התמונה
+                    });
+
+                    // הפיכת ה-Canvas לקובץ אמיתי (Blob)
+                    canvas.toBlob(async (blob) => {
+                        if (!blob) {
+                            alert("שגיאה ביצירת התמונה");
+                            return;
+                        }
+                        const file = new File([blob], "auction_results.png", { type: "image/png" });
+
+                        // בדיקה האם הדפדפן (בעיקר בניידים) תומך בשיתוף קבצים
+                        if (navigator.canShare && navigator.canShare({ files: [file] })) {
+                            await navigator.share({
+                                files: [file],
+                                title: 'תוצאות מכירה פומבית',
+                                text: `קבלו את הקבוצות של ${gameState.p1Name} ו-${gameState.p2Name}!`
+                            });
+                        } else {
+                            // פתרון גיבוי למחשבים/דפדפנים ישנים - מוריד את התמונה כקובץ למחשב
+                            const link = document.createElement('a');
+                            link.download = 'auction_results.png';
+                            link.href = canvas.toDataURL('image/png');
+                            link.click();
+                            alert("הדפדפן שלך לא תומך בשיתוף ישיר. התמונה הורדה למכשיר שלך, כעת תוכל לשלוח אותה ידנית!");
+                        }
+                        shareBtn.innerText = "📸 שתף צילום מסך";
+                        shareBtn.disabled = false;
+                    }, 'image/png');
+
+                } catch (err) {
+                    console.error("שגיאה בשיתוף התמונה:", err);
+                    alert("קרתה שגיאה במהלך יצירת התמונה.");
+                    shareBtn.innerText = "📸 שתף צילום מסך";
+                    shareBtn.disabled = false;
+                }
+            }
+        </script>
+    </body>
+    </html>
