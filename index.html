@@ -22,7 +22,19 @@
         .btn { background-color: var(--accent-color); color: #000; border: none; padding: 12px 24px; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 1rem; width: 100%; margin-bottom: 10px; }
         .btn:disabled { background-color: #555 !important; color: #aaa !important; }
         .btn-secondary { background-color: #34495e; color: white; font-size: 0.9rem; padding: 8px 16px; margin-bottom: 15px; width: auto; align-self: center; }
-        
+
+        .setup-header-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+        .setup-header-row h2 { border-bottom: none; margin-bottom: 0; padding-bottom: 0; }
+        .gear-btn { background: rgba(255,255,255,0.08); color: var(--accent-color); border: none; padding: 8px 14px; border-radius: 6px; cursor: pointer; font-size: 0.95rem; font-weight: bold; width: auto; }
+
+        .settings-panel { background: rgba(0,0,0,0.25); border: 1px dashed rgba(255,255,255,0.15); border-radius: 10px; padding: 15px; margin-bottom: 20px; }
+        .settings-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 15px; }
+        .settings-grid label { display: flex; flex-direction: column; gap: 6px; font-size: 0.82rem; color: var(--muted-text); }
+        .settings-grid input { background: rgba(255,255,255,0.05); border: 2px solid rgba(255,255,255,0.1); padding: 10px; border-radius: 6px; color: white; font-size: 1rem; }
+
+        .league-slot { background: rgba(255,255,255,0.03) !important; box-shadow: none !important; border: 1px solid rgba(255,255,255,0.06); padding: 15px !important; }
+        .league-slot h2 { font-size: 1rem; margin-bottom: 10px; }
+
         .teams-toggle-list { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 15px 0; max-height: 200px; overflow-y: auto; background: rgba(0,0,0,0.2); padding: 10px; border-radius: 6px; }
         .team-item { display: flex; align-items: center; gap: 8px; font-size: 0.95rem; cursor: pointer; }
         .team-item input { width: 18px; height: 18px; accent-color: var(--accent-color); }
@@ -39,7 +51,7 @@
         .action-btns { display: flex; gap: 12px; }
         .btn-pass { background-color: var(--danger-color); color: white; }
         .btn-continue { background-color: var(--success-color); color: white; }
-        
+
         .teams-dashboard { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 12px; background: rgba(0, 0, 0, 0.15); padding: 15px; border-radius: 12px; }
         .player-column { display: flex; flex-direction: column; background: rgba(255,255,255,0.02); padding: 10px; border-radius: 8px; text-align: right; border: 2px solid transparent; transition: all 0.4s ease; }
         .budget { color: var(--success-color); font-weight: bold; font-size: 1.1rem; margin-bottom: 8px; }
@@ -49,6 +61,7 @@
         .hidden { display: none !important; }
     </style>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 </head>
 <body>
 
@@ -58,34 +71,72 @@
 
     <div class="container">
 
-        <div class="panel" id="setupPanel">
-            <h2>כמות שחקנים במכירה</h2>
-            <div class="setup-row" style="margin-bottom: 20px;">
-                <select id="playerCountSelect" onchange="adjustPlayerInputs()">
-                    <option value="2" selected>2 שחקנים</option>
-                    <option value="3">3 שחקנים</option>
-                    <option value="4">4 שחקנים</option>
-                </select>
+        <div class="panel" id="modeSelectPanel">
+            <h2>איך רוצים לשחק?</h2>
+            <button class="btn" onclick="chooseLocalMode()">📱 מקומי (מעבירים מכשיר אחד)</button>
+            <button class="btn" style="background-color:#00b894;" onclick="chooseOnlineMode()">🌐 מקוון (כל אחד מהמכשיר שלו)</button>
+            <button class="btn btn-secondary hidden" id="rejoinLastRoomBtn" style="width:100%;"></button>
+        </div>
+
+        <div class="panel hidden" id="onlineChoicePanel">
+            <h2>משחק מקוון</h2>
+            <button class="btn" onclick="chooseCreateRoom()">➕ צור חדר חדש</button>
+            <button class="btn" onclick="chooseJoinRoom()">🔑 הצטרף לחדר עם קוד</button>
+            <button class="btn-secondary" onclick="location.reload()">⬅ חזרה</button>
+        </div>
+
+        <div class="panel hidden" id="joinRoomPanel">
+            <h2>הצטרפות לחדר</h2>
+            <div class="setup-row">
+                <input type="text" class="name-input" id="joinRoomCodeInput" maxlength="6" placeholder="קוד החדר (למשל: AB3XZ)" style="text-align:center; font-size:1.3rem; letter-spacing:3px;">
+            </div>
+            <button class="btn" onclick="joinRoomSubmit()">הצטרף 🚪</button>
+            <button class="btn-secondary" onclick="location.reload()">⬅ חזרה</button>
+        </div>
+
+        <div class="panel hidden" id="roomLobbyPanel">
+            <h2>לובי - ממתינים לשחקנים</h2>
+            <div style="text-align:center; margin-bottom:15px;">
+                <div style="color: var(--muted-text); font-size:0.9rem;">קוד החדר לשיתוף עם חברים:</div>
+                <div id="roomCodeDisplay" style="font-size:2rem; font-weight:bold; color: var(--accent-color); letter-spacing:4px;">-----</div>
+            </div>
+            <div id="roomSeatsContainer" style="display:flex; flex-direction:column; gap:10px; margin-bottom:15px;"></div>
+            <button class="btn hidden" id="hostStartBtn" onclick="hostStartOnlineGame()">התחל משחק 🚀</button>
+            <button class="btn-secondary" onclick="if(confirm('לעזוב את הלובי?')) location.reload();">⬅ עזוב</button>
+        </div>
+
+        <div class="panel hidden" id="setupPanel">
+            <button class="btn-secondary" onclick="if(confirm('לחזור להתחלה?')) location.reload();">⬅ חזרה להתחלה</button>
+            <div class="setup-header-row">
+                <h2>הגדרת המשחק</h2>
+                <button class="gear-btn" onclick="toggleSettingsPanel()">⚙️ הגדרות</button>
+            </div>
+
+            <div class="settings-panel hidden" id="settingsPanel">
+                <div class="settings-grid">
+                    <label>מספר משתתפים (2-10)
+                        <input type="number" id="setNumPlayers" min="2" max="10" value="2">
+                    </label>
+                    <label>תקציב לכל שחקן ($5-$100)
+                        <input type="number" id="setBudget" min="5" max="100" value="20">
+                    </label>
+                    <label>גודל סגל (5-12)
+                        <input type="number" id="setTeamSize" min="5" max="12" value="5">
+                    </label>
+                    <label><span>מספר ליגות (1-<span id="maxLeaguesHint">1</span>)</span>
+                        <input type="number" id="setNumLeagues" min="1" max="1" value="1">
+                    </label>
+                </div>
+                <button class="btn" onclick="applySettings()">שמור הגדרות ✅</button>
             </div>
 
             <h2>שמות השחקנים</h2>
-            <div class="setup-row" id="playerNamesContainer">
-                <input type="text" class="name-input player-name-field" maxlength="12" value="שחקן 1">
-                <input type="text" class="name-input player-name-field" maxlength="12" value="שחקן 2">
-            </div>
+            <div class="setup-row" id="playerNamesContainer"></div>
 
-            <h2>בחר ליגה פתוחה</h2>
-            <div class="setup-row">
-                <select id="leagueSelect" onchange="loadLeagueData()">
-                    <option value="">טוען ליגות מתוך Leagues.json...</option>
-                </select>
-            </div>
+            <h2>ליגות וקבוצות</h2>
+            <div id="leagueSlotsContainer"></div>
 
-            <h2 style="margin-top: 15px;">קבוצות שחולצו מהקובץ</h2>
-            <button class="toggle-all-btn" onclick="toggleAllTeams()">סמן/בטל הכל</button>
-            <div class="teams-toggle-list" id="teamsCheckboxes"></div>
-
-            <button class="btn" id="startBtn" onclick="startGame()">גמרנו, התחל משחק! 🚀</button>
+            <button class="btn" id="startBtn">גמרנו, התחל משחק! 🚀</button>
         </div>
 
         <div class="game-layout hidden" id="gamePanel">
@@ -95,13 +146,13 @@
                 <div class="turn-indicator" id="turnDisplay">-</div>
                 <div class="lot-name" id="currentLot">-</div>
                 <div class="lot-team" id="currentLotTeam">-</div>
-                
+
                 <div style="margin: 15px 0; font-size: 1.1rem;">
-                    הצעה מובילה: <strong id="bidDisplay" style="color: var(--accent-color); font-size: 1.4rem;">$1</strong> 
+                    הצעה מובילה: <strong id="bidDisplay" style="color: var(--accent-color); font-size: 1.4rem;">$1</strong>
                     <span id="bidder" style="color: var(--muted-text);">(מוביל: -)</span>
                 </div>
 
-                <div class="bid-slider-container">
+                <div class="bid-slider-container" id="bidSliderContainer">
                     <div class="slider-row">
                         <span id="minRangeLabel">$2</span>
                         <input type="range" id="bidRange" class="range-slider" min="2" max="20" value="2" oninput="document.getElementById('sliderAmountDisplay').innerText = '$'+this.value">
@@ -109,11 +160,13 @@
                         <div class="slider-val" id="sliderAmountDisplay">$2</div>
                     </div>
                 </div>
-                
-                <div class="action-btns">
+
+                <div class="action-btns" id="normalActionBtns">
                     <button class="btn" id="submitBidBtn" onclick="handleAction('bid')">אישור הצעה</button>
                     <button class="btn btn-pass" id="passBtn" onclick="handleAction('pass')">ויתור</button>
                 </div>
+
+                <button class="btn btn-continue hidden" id="autoFillActionBtn" onclick="confirmAutoFillPick()">אישור, הבא ⏭️</button>
             </div>
 
             <div class="teams-dashboard" id="screenshotArea"></div>
@@ -122,133 +175,460 @@
         <div class="summary-layout hidden" id="summaryPanel">
             <h2>🏁 המכירה הפומבית הסתיימה!</h2>
             <div style="margin: 10px 0; font-size: 1.1rem; color: var(--muted-text)">אלו הסגלים הסופיים שלכם:</div>
-            
+
             <div id="finalTeamsContainer" style="margin-bottom: 25px; margin-top: 20px;"></div>
-            
+
             <button class="btn" id="shareBtn" onclick="shareScreenshot()" style="background-color: var(--success-color); color: black;">📸 שתף צילום מסך</button>
-            <button class="btn btn-secondary" onclick="location.reload()" style="display: block; margin: 10px auto;">משחק חדש 🔄</button>
+            <button class="btn btn-secondary" onclick="startNewGame()" style="display: block; margin: 10px auto;">משחק חדש 🔄</button>
         </div>
 
     </div>
 
     <script>
-        let loadedPlayers = [];   
-        let filteredPlayers = []; 
-        let fileCache = {};       
+        // ---------- Persistence keys ----------
+        const LS_LOBBY = 'auction_lobby_v1';       // player names, settings, league/team selections (kept between games)
+        const LS_GAME  = 'auction_game_v1';         // full mid-game snapshot for LOCAL mode only
+        const LS_LAST_ROOM = 'auction_last_room_v1'; // last online room code, for a quick "rejoin" shortcut
 
+        // ---------- Settings ----------
+        const DEFAULT_SETTINGS = { numPlayers: 2, budget: 20, teamSize: 5, numLeagues: 1 };
+        let settings = { ...DEFAULT_SETTINGS };
+
+        // Ordered so that any two consecutive players (by turn order) are 108° apart on the
+        // color wheel - the maximum possible even spacing for a 10-color rotating palette.
+        // This guarantees player N and player N+1 never look like shades of the same color.
+        const PLAYER_COLORS = [
+            { bg: "rgba(194, 46, 46, 0.24)",   border: "#c22e2e" },  // red
+            { bg: "rgba(75, 194, 46, 0.24)",   border: "#4bc22e" },  // green
+            { bg: "rgba(46, 105, 194, 0.24)",  border: "#2e69c2" },  // blue
+            { bg: "rgba(194, 46, 135, 0.24)",  border: "#c22e87" },  // magenta
+            { bg: "rgba(164, 194, 46, 0.24)",  border: "#a4c22e" },  // chartreuse
+            { bg: "rgba(46, 194, 194, 0.24)",  border: "#2ec2c2" },  // cyan
+            { bg: "rgba(164, 46, 194, 0.24)",  border: "#a42ec2" },  // purple
+            { bg: "rgba(194, 135, 46, 0.24)",  border: "#c2872e" },  // orange
+            { bg: "rgba(46, 194, 105, 0.24)",  border: "#2ec269" },  // teal-green
+            { bg: "rgba(75, 46, 194, 0.24)",   border: "#4b2ec2" }   // indigo
+        ];
+
+        // ---------- League data ----------
+        let availableLeagueFiles = [];   // ["PT_26.json", "GS_26.json", ...]
+        let leagueDataCache = {};        // fileName -> raw parsed JSON array
+        let leagueSlots = [];            // [{ file, checkedTeams: [team,...] | null }]
+
+        // ---------- Game state ----------
         let players = [];
         let currentTurnIndex = 0;
         let leadingBidderIndex = 0;
-        let roundStarterIndex = 0; // המשתנה החדש שעוקב אחרי מי שתורו לפתוח את הסיבוב הבא
-        let currentLotItem = null; 
-        let currentRoundCounter = 1; 
-
-        const playerColors = [
-            { name: "כחול עמוק", bg: "rgba(41, 128, 185, 0.25)", border: "#2980b9" },
-            { name: "ירוק זית עדין", bg: "rgba(39, 174, 96, 0.23)", border: "#27ae60" },
-            { name: "סגול חציל רך", bg: "rgba(142, 68, 173, 0.25)", border: "#8e44ad" },
-            { name: "כתום ענבר עמוק", bg: "rgba(211, 84, 0, 0.23)", border: "#d35400" }
-        ];
+        let roundStarterIndex = 0;
+        let currentLotItem = null;
+        let currentRoundCounter = 1;
+        let filteredPlayers = [];
+        let autoFillState = { active: false, playerId: null };
 
         let gameState = {
             currentBid: 1,
             isInitial: true
         };
 
-        window.onload = async function() {
-            adjustPlayerInputs(); 
-            const select = document.getElementById('leagueSelect');
-            try {
-                const indexResponse = await fetch('Leagues.json');
-                if (!indexResponse.ok) throw new Error("קובץ Leagues.json לא נמצא.");
-                
-                const jsonFiles = await indexResponse.json();
-                select.innerHTML = '';
-                
-                for (let fileName of jsonFiles) {
-                    try {
-                        const response = await fetch(fileName);
-                        if (!response.ok) continue;
-                        const data = await response.json();
-                        fileCache[fileName] = data;
+        // ---------- Online mode state ----------
+        // Fill this in with your own Supabase project's URL + anon key (Project Settings ->
+        // API). The anon key is meant to be public/embedded in client code - it is NOT a secret
+        // like a service-role key. Security is enforced through Row Level Security policies on
+        // the "rooms" table (see README.md for the exact SQL to run), not by hiding this key.
+        const SUPABASE_CONFIG = {
+            url: "https://jhmfkuuxarhrmwmgxwlb.supabase.co",
+            anonKey: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpobWZrdXV4YXJocm13bWd4d2xiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODM0NDU4NDIsImV4cCI6MjA5OTAyMTg0Mn0.DXQrsf4a7PvS1rfLY1TW3I_OIfImD9P3MfUpN4lqqAk"
+        };
 
-                        const leagueName = data[0].laegue || data[0].league || fileName;
-                        select.innerHTML += `<option value="${fileName}">${leagueName}</option>`;
-                    } catch (err) {
-                        console.error(`שגיאה בטעינת קובץ: ${fileName}`, err);
-                    }
-                }
+        let isOnline = false;
+        let roomCode = null;
+        let myUid = null;
+        let mySeatIndex = null;
+        let sbClient = null;
+        let roomChannel = null;
 
-                if(select.options.length > 0) {
-                    loadLeagueData();
-                } else {
-                    select.innerHTML = '<option value="">לא נמצאו ליגות תקינות</option>';
+        function isSupabaseConfigured() {
+            return !SUPABASE_CONFIG.url.includes('YOUR_') && !SUPABASE_CONFIG.anonKey.includes('YOUR_');
+        }
+
+        async function ensureSupabaseAuth() {
+            if (!isSupabaseConfigured()) {
+                alert("כדי לשחק מקוון צריך קודם להגדיר פרויקט Supabase (ראו README.md).");
+                throw new Error("Supabase not configured");
+            }
+            if (!sbClient) {
+                sbClient = window.supabase.createClient(SUPABASE_CONFIG.url, SUPABASE_CONFIG.anonKey);
+            }
+            if (!myUid) {
+                const { data, error } = await sbClient.auth.signInAnonymously();
+                if (error) {
+                    alert("שגיאה בהתחברות האנונימית: " + error.message);
+                    throw error;
                 }
-            } catch (err) {
-                alert("שגיאה קריטית: ודא שקיים קובץ בשם 'Leagues.json' באותה התיקייה בדיוק.");
-                console.error(err);
+                myUid = data.user.id;
+            }
+            return myUid;
+        }
+
+        // ---------- Boot ----------
+        window.onload = function() {
+            if (isSupabaseConfigured()) {
+                ensureSupabaseAuth().catch(() => {}); // warm up in the background; errors surface later if actually needed
+            }
+            const lastRoom = localStorage.getItem(LS_LAST_ROOM);
+            if (lastRoom) {
+                const btn = document.getElementById('rejoinLastRoomBtn');
+                btn.classList.remove('hidden');
+                btn.innerText = `חזרה לחדר האחרון (${lastRoom}) 🔄`;
+                btn.onclick = () => rejoinLastRoom(lastRoom);
             }
         };
 
-        function adjustPlayerInputs() {
-            const count = parseInt(document.getElementById('playerCountSelect').value);
-            const container = document.getElementById('playerNamesContainer');
-            container.innerHTML = '';
-            
-            for(let i = 1; i <= count; i++) {
-                container.innerHTML += `<input type="text" class="name-input player-name-field" maxlength="12" value="שחקן ${i}">`;
+        async function loadLeagueFilesAndShowSetup() {
+            try {
+                const indexResponse = await fetch('Leagues.json');
+                if (!indexResponse.ok) throw new Error("קובץ Leagues.json לא נמצא.");
+                availableLeagueFiles = await indexResponse.json();
+            } catch (err) {
+                alert("שגיאה קריטית: ודא שקיים קובץ בשם 'Leagues.json' באותה התיקייה בדיוק.");
+                console.error(err);
+                return;
             }
+
+            for (const fileName of availableLeagueFiles) {
+                try {
+                    const response = await fetch(fileName);
+                    if (!response.ok) continue;
+                    leagueDataCache[fileName] = await response.json();
+                } catch (err) {
+                    console.error(`שגיאה בטעינת קובץ: ${fileName}`, err);
+                }
+            }
+
+            loadLobbyFromStorage();
+            renderSettingsInputs();
+            renderPlayerNameInputs();
+            renderLeagueSlots();
+
+            const startBtn = document.getElementById('startBtn');
+            startBtn.innerText = isOnline ? "צור חדר מקוון 🌐" : "גמרנו, התחל משחק! 🚀";
+            startBtn.onclick = isOnline ? createOnlineRoom : startGame;
+
+            document.getElementById('setupPanel').classList.remove('hidden');
         }
 
-        function loadLeagueData() {
-            const selectedFile = document.getElementById('leagueSelect').value;
-            const fullData = fileCache[selectedFile];
-            if (!fullData) return;
+        // ---------- Mode selection ----------
+        async function chooseLocalMode() {
+            isOnline = false;
+            document.getElementById('modeSelectPanel').classList.add('hidden');
 
-            const rawList = fullData.filter(item => item.name && item.team);
-            const seen = new Set();
-            loadedPlayers = [];
-            
-            rawList.forEach(p => {
-                const uniqueKey = `${p.name.trim()}_${p.team.trim()}`;
-                if (!seen.has(uniqueKey)) {
-                    seen.add(uniqueKey);
-                    loadedPlayers.push({
-                        name: p.name.trim(),
-                        team: p.team.trim()
-                    });
+            const savedGame = localStorage.getItem(LS_GAME);
+            if (savedGame) {
+                try {
+                    const snapshot = JSON.parse(savedGame);
+                    if (confirm("נמצא משחק פעיל שלא הסתיים. לשחזר אותו ולהמשיך מאיפה שעצרתם?")) {
+                        restoreGameState(snapshot);
+                        return;
+                    } else {
+                        localStorage.removeItem(LS_GAME);
+                    }
+                } catch (err) {
+                    console.error("שגיאה בשחזור המשחק השמור", err);
+                    localStorage.removeItem(LS_GAME);
+                }
+            }
+
+            await loadLeagueFilesAndShowSetup();
+        }
+
+        function chooseOnlineMode() {
+            document.getElementById('modeSelectPanel').classList.add('hidden');
+            document.getElementById('onlineChoicePanel').classList.remove('hidden');
+        }
+
+        async function chooseCreateRoom() {
+            try { await ensureSupabaseAuth(); } catch (e) { return; }
+            isOnline = true;
+            document.getElementById('onlineChoicePanel').classList.add('hidden');
+            await loadLeagueFilesAndShowSetup();
+        }
+
+        function chooseJoinRoom() {
+            document.getElementById('onlineChoicePanel').classList.add('hidden');
+            document.getElementById('joinRoomPanel').classList.remove('hidden');
+        }
+
+        function joinRoomSubmit() {
+            const code = document.getElementById('joinRoomCodeInput').value.trim().toUpperCase();
+            if (!code) { alert("צריך להזין קוד חדר."); return; }
+            attemptJoinRoom(code);
+        }
+
+        async function rejoinLastRoom(code) {
+            document.getElementById('modeSelectPanel').classList.add('hidden');
+            await attemptJoinRoom(code);
+        }
+
+        async function attemptJoinRoom(code) {
+            try { await ensureSupabaseAuth(); } catch (e) { return; }
+            isOnline = true;
+
+            const { data, error } = await sbClient.from('rooms').select('lobby, state').eq('room_code', code).maybeSingle();
+            if (error || !data) {
+                alert("לא נמצא חדר עם הקוד הזה. בדקו שהקוד נכון.");
+                return;
+            }
+
+            roomCode = code;
+            localStorage.setItem(LS_LAST_ROOM, roomCode);
+            document.getElementById('joinRoomPanel').classList.add('hidden');
+
+            const lobby = data.lobby;
+            const existingSeatIndex = (lobby.seats || []).findIndex(s => s && s.uid === myUid);
+            mySeatIndex = existingSeatIndex >= 0 ? existingSeatIndex : null;
+
+            await enterRoomLobby(lobby.hostUid === myUid);
+        }
+
+        // ---------- Hosting an online room ----------
+        function generateRoomCode() {
+            const chars = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789'; // no 0/O or 1/I - easy to read aloud
+            let code = '';
+            for (let i = 0; i < 5; i++) code += chars[Math.floor(Math.random() * chars.length)];
+            return code;
+        }
+
+        async function createOnlineRoom() {
+            const nameFields = document.querySelectorAll('.player-name-field');
+            const hostName = (nameFields[0] && nameFields[0].value.trim()) || 'שחקן 1';
+
+            const resolvedSlots = leagueSlots.map((slot, i) => ({
+                file: slot.file,
+                checkedTeams: Array.from(document.querySelectorAll(`.team-cb[data-slot="${i}"]`))
+                                    .filter(cb => cb.checked).map(cb => cb.value)
+            }));
+
+            const seenGlobal = new Set();
+            let pool = [];
+            resolvedSlots.forEach(slot => {
+                if (!slot.file) return;
+                getPlayersForFile(slot.file).filter(p => slot.checkedTeams.includes(p.team)).forEach(p => {
+                    const key = `${slot.file}_${p.name}_${p.team}`;
+                    if (!seenGlobal.has(key)) { seenGlobal.add(key); pool.push(p); }
+                });
+            });
+            const totalSlotsNeeded = settings.numPlayers * settings.teamSize;
+            if (pool.length < totalSlotsNeeded) {
+                alert(`יש מעט מדי שחקנים בקבוצות שנבחרו! בשביל ${settings.numPlayers} משתתפים (${settings.teamSize} בסגל כל אחד) צריך לפחות ${totalSlotsNeeded} שחקנים, ויש רק ${pool.length}.`);
+                return;
+            }
+
+            try { await ensureSupabaseAuth(); } catch (e) { return; }
+
+            roomCode = generateRoomCode();
+            localStorage.setItem(LS_LAST_ROOM, roomCode);
+
+            const seats = [];
+            for (let i = 0; i < settings.numPlayers; i++) seats.push({ name: '', uid: null });
+            seats[0] = { name: hostName, uid: myUid };
+
+            const { error } = await sbClient.from('rooms').insert({
+                room_code: roomCode,
+                lobby: {
+                    hostUid: myUid,
+                    settings: { ...settings },
+                    leagueSlots: resolvedSlots,
+                    seats,
+                    createdAt: Date.now()
                 }
             });
-
-            generateTeamCheckboxes();
-        }
-
-        function generateTeamCheckboxes() {
-            const container = document.getElementById('teamsCheckboxes');
-            container.innerHTML = '';
-            const uniqueTeams = [...new Set(loadedPlayers.map(p => p.team))].filter(Boolean);
-            uniqueTeams.sort();
-
-            uniqueTeams.forEach(team => {
-                container.innerHTML += `
-                    <label class="team-item">
-                        <input type="checkbox" class="team-cb" value="${team}" checked>
-                        <span>${team}</span>
-                    </label>
-                `;
-            });
-        }
-
-        function toggleAllTeams() {
-            const checkboxes = document.querySelectorAll('.team-cb');
-            const allChecked = Array.from(checkboxes).every(cb => cb.checked);
-            checkboxes.forEach(cb => cb.checked = !allChecked);
-        }
-
-        function resetToHome() {
-            if(confirm("האם אתה בטוח שברצונך לעזוב את המשחק הנוכחי ולחזור למסך הראשי?")) {
-                location.reload();
+            if (error) {
+                alert("שגיאה ביצירת החדר: " + error.message);
+                console.error(error);
+                return;
             }
+
+            saveLobbyToStorage();
+            mySeatIndex = 0;
+
+            document.getElementById('setupPanel').classList.add('hidden');
+            await enterRoomLobby(true);
+        }
+
+        // A single realtime subscription per room covers both the lobby (seat claims) and the
+        // game state (bids/passes) - both live as columns on the same "rooms" row, so any UPDATE
+        // to that row delivers whichever part changed.
+        async function enterRoomLobby(isHost) {
+            document.getElementById('roomLobbyPanel').classList.remove('hidden');
+            document.getElementById('roomCodeDisplay').innerText = roomCode;
+            document.getElementById('hostStartBtn').classList.toggle('hidden', !isHost);
+
+            const { data } = await sbClient.from('rooms').select('lobby, state').eq('room_code', roomCode).maybeSingle();
+            if (data) {
+                if (data.state) { applyRemoteState(data.state); return; }
+                if (data.lobby) renderRoomLobbySeats(data.lobby, isHost);
+            }
+
+            roomChannel = sbClient
+                .channel(`room-${roomCode}`)
+                .on('postgres_changes', { event: '*', schema: 'public', table: 'rooms', filter: `room_code=eq.${roomCode}` }, (payload) => {
+                    const row = payload.new;
+                    if (!row) return;
+                    if (row.state) {
+                        document.getElementById('roomLobbyPanel').classList.add('hidden');
+                        applyRemoteState(row.state);
+                    } else if (row.lobby) {
+                        renderRoomLobbySeats(row.lobby, isHost);
+                    }
+                })
+                .subscribe();
+        }
+
+        function renderRoomLobbySeats(lobby, isHost) {
+            const seats = lobby.seats || [];
+            const container = document.getElementById('roomSeatsContainer');
+
+            container.innerHTML = seats.map((seat, i) => {
+                if (seat && seat.uid) {
+                    const isMe = seat.uid === myUid;
+                    return `<div class="team-item" style="justify-content:space-between; background:rgba(0,0,0,0.15); padding:10px; border-radius:6px;">
+                                <span>${escapeHtml(seat.name)} ${isMe ? '(אתה)' : ''}</span>
+                                <span>✅</span>
+                            </div>`;
+                } else if (mySeatIndex === null) {
+                    return `<div style="display:flex; flex-direction:column; gap:6px; background:rgba(0,0,0,0.15); padding:10px; border-radius:6px;">
+                                <input type="text" class="name-input" id="seatClaimInput_${i}" maxlength="12" placeholder="השם שלך">
+                                <button class="btn btn-continue" style="margin-bottom:0;" onclick="claimSeat(${i})">זה אני!</button>
+                            </div>`;
+                } else {
+                    return `<div class="team-item" style="background:rgba(0,0,0,0.1); padding:10px; border-radius:6px;"><span style="color:var(--muted-text);">מקום פנוי...</span></div>`;
+                }
+            }).join('');
+
+            const allClaimed = seats.length > 0 && seats.every(s => s && s.uid);
+            if (isHost) {
+                const startBtn = document.getElementById('hostStartBtn');
+                startBtn.disabled = !allClaimed;
+                startBtn.innerText = allClaimed ? "התחל משחק 🚀" : `ממתין לעוד ${seats.filter(s => !s || !s.uid).length} שחקנים...`;
+            }
+        }
+
+        async function claimSeat(i) {
+            const input = document.getElementById(`seatClaimInput_${i}`);
+            const name = (input.value || '').trim();
+            if (!name) { alert("צריך להזין שם."); return; }
+
+            // claim_seat is a Postgres function that does an atomic "claim only if still empty"
+            // UPDATE, so two people clicking the same seat at once can't both succeed - see README.
+            const { data, error } = await sbClient.rpc('claim_seat', {
+                p_room_code: roomCode, p_seat_index: i, p_name: name, p_uid: myUid
+            });
+
+            if (error || !data) {
+                alert("מישהו כבר תפס את המקום הזה, נסו מקום אחר.");
+                return;
+            }
+            mySeatIndex = i;
+        }
+
+        async function hostStartOnlineGame() {
+            const { data } = await sbClient.from('rooms').select('lobby').eq('room_code', roomCode).maybeSingle();
+            const lobby = data && data.lobby;
+            if (!lobby) return;
+            const seats = lobby.seats || [];
+            if (!seats.every(s => s && s.uid)) { alert("עדיין לא כל המקומות תפוסים."); return; }
+
+            settings = { ...DEFAULT_SETTINGS, ...lobby.settings };
+
+            const seenGlobal = new Set();
+            filteredPlayers = [];
+            (lobby.leagueSlots || []).forEach(slot => {
+                if (!slot.file) return;
+                getPlayersForFile(slot.file).filter(p => (slot.checkedTeams || []).includes(p.team)).forEach(p => {
+                    const key = `${slot.file}_${p.name}_${p.team}`;
+                    if (!seenGlobal.has(key)) { seenGlobal.add(key); filteredPlayers.push({ name: p.name, team: p.team }); }
+                });
+            });
+
+            players = seats.map((seat, index) => ({
+                id: index,
+                name: seat.name,
+                uid: seat.uid,
+                money: settings.budget,
+                roster: [],
+                isOutFromCurrentLot: false,
+                color: PLAYER_COLORS[index % PLAYER_COLORS.length]
+            }));
+
+            shuffleArray(filteredPlayers);
+            currentLotItem = filteredPlayers.shift();
+            gameState = { currentBid: 1, isInitial: true };
+            roundStarterIndex = 0;
+            currentTurnIndex = 0;
+            leadingBidderIndex = 0;
+            currentRoundCounter = 1;
+            autoFillState = { active: false, playerId: null };
+
+            const leagueNames = (lobby.leagueSlots || []).filter(s => s.file).map(s => getLeagueDisplayName(s.file));
+            const title = `🏆 ${leagueNames.join(' + ')}`;
+            document.getElementById('mainTitle').innerText = title;
+
+            await pushOnlineState(title);
+        }
+
+        function buildStateSnapshot(titleOverride) {
+            return {
+                settings, players, currentTurnIndex, leadingBidderIndex, roundStarterIndex,
+                currentLotItem, currentRoundCounter, filteredPlayers, gameState, autoFillState,
+                mainTitle: titleOverride || document.getElementById('mainTitle').innerText
+            };
+        }
+
+        async function pushOnlineState(titleOverride) {
+            const { error } = await sbClient.from('rooms')
+                .update({ state: buildStateSnapshot(titleOverride), updated_at: new Date().toISOString() })
+                .eq('room_code', roomCode);
+            if (error) console.error("שגיאה בשמירת המצב המקוון", error);
+        }
+
+        function applyRemoteState(remoteState) {
+            settings = { ...DEFAULT_SETTINGS, ...(remoteState.settings || {}) };
+            players = remoteState.players || [];
+            currentTurnIndex = remoteState.currentTurnIndex || 0;
+            leadingBidderIndex = remoteState.leadingBidderIndex || 0;
+            roundStarterIndex = remoteState.roundStarterIndex || 0;
+            currentLotItem = remoteState.currentLotItem || null;
+            currentRoundCounter = remoteState.currentRoundCounter || 1;
+            filteredPlayers = remoteState.filteredPlayers || [];
+            gameState = remoteState.gameState || { currentBid: 1, isInitial: true };
+            autoFillState = remoteState.autoFillState || { active: false, playerId: null };
+
+            document.getElementById('mainTitle').innerText = remoteState.mainTitle || document.getElementById('mainTitle').innerText;
+
+            const myPlayer = players.find(p => p.uid === myUid);
+            if (myPlayer) mySeatIndex = myPlayer.id;
+
+            const dashboard = document.getElementById('screenshotArea');
+            dashboard.innerHTML = '';
+            players.forEach(p => { dashboard.innerHTML += playerColumnHtml(p); });
+
+            document.getElementById('modeSelectPanel').classList.add('hidden');
+            document.getElementById('onlineChoicePanel').classList.add('hidden');
+            document.getElementById('joinRoomPanel').classList.add('hidden');
+            document.getElementById('roomLobbyPanel').classList.add('hidden');
+            document.getElementById('setupPanel').classList.add('hidden');
+            document.getElementById('gamePanel').classList.remove('hidden');
+
+            renderUI();
+        }
+
+        // ---------- Small helpers ----------
+        function escapeHtml(str) {
+            return String(str).replace(/[&<>"']/g, ch => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[ch]));
+        }
+
+        function clamp(value, min, max) {
+            return Math.min(max, Math.max(min, value));
         }
 
         function shuffleArray(array) {
@@ -260,92 +640,302 @@
             }
         }
 
+        function getLeagueDisplayName(fileName) {
+            const data = leagueDataCache[fileName];
+            if (!data || !data[0]) return fileName;
+            return data[0].laegue || data[0].league || fileName;
+        }
+
+        function getPlayersForFile(fileName) {
+            const data = leagueDataCache[fileName];
+            if (!data) return [];
+            const rawList = data.filter(item => item.name && item.team);
+            const seen = new Set();
+            const result = [];
+            rawList.forEach(p => {
+                const key = `${p.name.trim()}_${p.team.trim()}`;
+                if (!seen.has(key)) {
+                    seen.add(key);
+                    result.push({ name: p.name.trim(), team: p.team.trim() });
+                }
+            });
+            return result;
+        }
+
+        // ---------- Lobby persistence (settings, names, league/team choices) ----------
+        function saveLobbyToStorage() {
+            const names = Array.from(document.querySelectorAll('.player-name-field')).map(f => f.value);
+            const lobby = {
+                settings,
+                playerNames: names,
+                leagueSlots: leagueSlots.map(s => ({ file: s.file, checkedTeams: s.checkedTeams }))
+            };
+            try {
+                localStorage.setItem(LS_LOBBY, JSON.stringify(lobby));
+            } catch (err) {
+                console.error("שגיאה בשמירת הגדרות הלובי", err);
+            }
+        }
+
+        let _savedPlayerNames = null;
+
+        function loadLobbyFromStorage() {
+            try {
+                const raw = localStorage.getItem(LS_LOBBY);
+                if (!raw) return;
+                const lobby = JSON.parse(raw);
+                if (lobby.settings) settings = { ...DEFAULT_SETTINGS, ...lobby.settings };
+                _savedPlayerNames = Array.isArray(lobby.playerNames) ? lobby.playerNames : null;
+                if (Array.isArray(lobby.leagueSlots)) {
+                    leagueSlots = lobby.leagueSlots
+                        .filter(s => availableLeagueFiles.includes(s.file))
+                        .map(s => ({ file: s.file, checkedTeams: s.checkedTeams }));
+                }
+            } catch (err) {
+                console.error("שגיאה בטעינת הגדרות הלובי", err);
+            }
+            settings.numLeagues = clamp(settings.numLeagues, 1, availableLeagueFiles.length || 1);
+        }
+
+        // ---------- Settings panel ----------
+        function toggleSettingsPanel() {
+            document.getElementById('settingsPanel').classList.toggle('hidden');
+        }
+
+        function renderSettingsInputs() {
+            const maxLeagues = availableLeagueFiles.length || 1;
+            document.getElementById('setNumPlayers').value = settings.numPlayers;
+            document.getElementById('setBudget').value = settings.budget;
+            document.getElementById('setTeamSize').value = settings.teamSize;
+            document.getElementById('setNumLeagues').value = settings.numLeagues;
+            document.getElementById('setNumLeagues').max = maxLeagues;
+            document.getElementById('maxLeaguesHint').innerText = maxLeagues;
+        }
+
+        function applySettings() {
+            const maxLeagues = availableLeagueFiles.length || 1;
+            settings.numPlayers  = clamp(parseInt(document.getElementById('setNumPlayers').value) || DEFAULT_SETTINGS.numPlayers, 2, 10);
+            settings.budget      = clamp(parseInt(document.getElementById('setBudget').value) || DEFAULT_SETTINGS.budget, 5, 100);
+            settings.teamSize    = clamp(parseInt(document.getElementById('setTeamSize').value) || DEFAULT_SETTINGS.teamSize, 5, 12);
+            settings.numLeagues  = clamp(parseInt(document.getElementById('setNumLeagues').value) || 1, 1, maxLeagues);
+
+            renderSettingsInputs();
+            renderPlayerNameInputs();
+            renderLeagueSlots();
+            saveLobbyToStorage();
+            document.getElementById('settingsPanel').classList.add('hidden');
+        }
+
+        // ---------- Player name inputs ----------
+        function renderPlayerNameInputs() {
+            const container = document.getElementById('playerNamesContainer');
+            container.innerHTML = '';
+            for (let i = 1; i <= settings.numPlayers; i++) {
+                const val = (_savedPlayerNames && _savedPlayerNames[i - 1]) ? _savedPlayerNames[i - 1] : `שחקן ${i}`;
+                container.innerHTML += `<input type="text" class="name-input player-name-field" maxlength="12" value="${escapeHtml(val)}" onchange="saveLobbyToStorage()">`;
+            }
+        }
+
+        // ---------- League slots (one per league included in the pool) ----------
+        function renderLeagueSlots() {
+            while (leagueSlots.length < settings.numLeagues) leagueSlots.push({ file: '', checkedTeams: null });
+            leagueSlots = leagueSlots.slice(0, settings.numLeagues);
+
+            const container = document.getElementById('leagueSlotsContainer');
+            container.innerHTML = '';
+
+            leagueSlots.forEach((slot, i) => {
+                if (!slot.file && availableLeagueFiles.length) {
+                    slot.file = availableLeagueFiles[i % availableLeagueFiles.length];
+                }
+                const div = document.createElement('div');
+                div.className = 'panel league-slot';
+                div.innerHTML = `
+                    <h2>ליגה ${i + 1}</h2>
+                    <select onchange="onLeagueSlotChange(${i})">
+                        ${availableLeagueFiles.map(f => `<option value="${escapeHtml(f)}" ${f === slot.file ? 'selected' : ''}>${escapeHtml(getLeagueDisplayName(f))}</option>`).join('')}
+                    </select>
+                    <button class="toggle-all-btn" onclick="toggleAllTeamsInSlot(${i})">סמן/בטל הכל</button>
+                    <div class="teams-toggle-list" id="teamsCheckboxes_${i}"></div>
+                `;
+                container.appendChild(div);
+                renderTeamsForSlot(i);
+            });
+
+            saveLobbyToStorage();
+        }
+
+        function onLeagueSlotChange(i) {
+            const select = document.querySelectorAll('#leagueSlotsContainer select')[i];
+            leagueSlots[i].file = select.value;
+            leagueSlots[i].checkedTeams = null; // reset to "all checked" for the newly picked league
+            renderTeamsForSlot(i);
+            saveLobbyToStorage();
+        }
+
+        function renderTeamsForSlot(i) {
+            const slot = leagueSlots[i];
+            const el = document.getElementById(`teamsCheckboxes_${i}`);
+            if (!slot.file || !leagueDataCache[slot.file]) {
+                el.innerHTML = '<div style="color: var(--muted-text); font-size:0.85rem;">טוען...</div>';
+                return;
+            }
+            const playersInFile = getPlayersForFile(slot.file);
+            const teams = [...new Set(playersInFile.map(p => p.team))].filter(Boolean).sort();
+            const checkedSet = slot.checkedTeams ? new Set(slot.checkedTeams) : new Set(teams);
+
+            el.innerHTML = teams.map(t => `
+                <label class="team-item">
+                    <input type="checkbox" class="team-cb" data-slot="${i}" value="${escapeHtml(t)}" ${checkedSet.has(t) ? 'checked' : ''} onchange="onTeamCheckboxChange(${i})">
+                    <span>${escapeHtml(t)}</span>
+                </label>
+            `).join('');
+        }
+
+        function onTeamCheckboxChange(i) {
+            const checked = Array.from(document.querySelectorAll(`.team-cb[data-slot="${i}"]`))
+                                  .filter(cb => cb.checked)
+                                  .map(cb => cb.value);
+            leagueSlots[i].checkedTeams = checked;
+            saveLobbyToStorage();
+        }
+
+        function toggleAllTeamsInSlot(i) {
+            const checkboxes = document.querySelectorAll(`.team-cb[data-slot="${i}"]`);
+            const allChecked = Array.from(checkboxes).every(cb => cb.checked);
+            checkboxes.forEach(cb => cb.checked = !allChecked);
+            onTeamCheckboxChange(i);
+        }
+
+        // ---------- Navigation ----------
+        function resetToHome() {
+            if (confirm("האם אתה בטוח שברצונך לעזוב את המשחק הנוכחי ולחזור למסך הראשי?")) {
+                if (!isOnline) localStorage.removeItem(LS_GAME);
+                location.reload();
+            }
+        }
+
+        function startNewGame() {
+            if (!isOnline) localStorage.removeItem(LS_GAME);
+            location.reload();
+        }
+
+        // ---------- Starting a game ----------
         function startGame() {
             const nameFields = document.querySelectorAll('.player-name-field');
             players = [];
-            currentRoundCounter = 1; 
-            
+            currentRoundCounter = 1;
+
             nameFields.forEach((field, index) => {
-                const colorConfig = playerColors[index % playerColors.length];
                 players.push({
                     id: index,
                     name: field.value.trim() || `שחקן ${index + 1}`,
-                    money: 20,
+                    money: settings.budget,
                     roster: [],
                     isOutFromCurrentLot: false,
-                    color: colorConfig
+                    color: PLAYER_COLORS[index % PLAYER_COLORS.length]
                 });
             });
-            
-            const checkedTeams = Array.from(document.querySelectorAll('.team-cb'))
+
+            const seenGlobal = new Set();
+            filteredPlayers = [];
+            leagueSlots.forEach((slot, i) => {
+                if (!slot.file) return;
+                const checked = Array.from(document.querySelectorAll(`.team-cb[data-slot="${i}"]`))
                                       .filter(cb => cb.checked)
                                       .map(cb => cb.value);
+                const playersInFile = getPlayersForFile(slot.file).filter(p => checked.includes(p.team));
+                playersInFile.forEach(p => {
+                    const key = `${slot.file}_${p.name}_${p.team}`;
+                    if (!seenGlobal.has(key)) {
+                        seenGlobal.add(key);
+                        filteredPlayers.push({ name: p.name, team: p.team });
+                    }
+                });
+            });
 
-            const baseFiltered = loadedPlayers.filter(p => checkedTeams.includes(p.team));
-            filteredPlayers = baseFiltered.map(p => ({ name: p.name, team: p.team }));
-
-            const totalSlotsNeeded = players.length * 5;
+            const totalSlotsNeeded = players.length * settings.teamSize;
             if (filteredPlayers.length < totalSlotsNeeded) {
-                alert(`יש מעט מדי שחקנים בקבוצות שנבחרו! בשביל ${players.length} משתתפים צריך לפחות ${totalSlotsNeeded} שחקנים בסך הכל.`);
+                alert(`יש מעט מדי שחקנים בקבוצות שנבחרו! בשביל ${players.length} משתתפים (${settings.teamSize} בסגל כל אחד) צריך לפחות ${totalSlotsNeeded} שחקנים בסך הכל, ויש רק ${filteredPlayers.length}.`);
                 return;
             }
 
-            const selectedLeagueText = document.getElementById('leagueSelect').options[document.getElementById('leagueSelect').selectedIndex].text;
-            document.getElementById('mainTitle').innerText = `🏆 ${selectedLeagueText}`;
+            const leagueNames = leagueSlots.filter(s => s.file).map(s => getLeagueDisplayName(s.file));
+            document.getElementById('mainTitle').innerText = `🏆 ${leagueNames.join(' + ')}`;
 
             shuffleArray(filteredPlayers);
-            
+
             const dashboard = document.getElementById('screenshotArea');
             dashboard.innerHTML = '';
-            players.forEach(p => {
-                dashboard.innerHTML += `
-                    <div class="player-column" id="playerCol_${p.id}">
-                        <span style="font-weight:bold; font-size:1.05rem; display: flex; align-items: center; gap: 6px;">
-                            <span style="width: 10px; height: 10px; background-color: ${p.color.border}; border-radius: 50%; display: inline-block;"></span>
-                            ${p.name}
-                        </span>
-                        <span class="budget" id="playerMoney_${p.id}">$20</span>
-                        <ul class="roster-list" id="playerRoster_${p.id}"></ul>
-                    </div>
-                `;
-            });
+            players.forEach(p => { dashboard.innerHTML += playerColumnHtml(p); });
 
-            currentLotItem = filteredPlayers.shift(); 
-            
+            currentLotItem = filteredPlayers.shift();
+
             gameState.currentBid = 1;
             gameState.isInitial = true;
-            roundStarterIndex = 0; // הראשון ברשימה מתחיל
+            roundStarterIndex = 0;
             currentTurnIndex = roundStarterIndex;
             leadingBidderIndex = roundStarterIndex;
+            autoFillState = { active: false, playerId: null };
+
+            saveLobbyToStorage();
 
             document.getElementById('setupPanel').classList.add('hidden');
             document.getElementById('gamePanel').classList.remove('hidden');
-            
+
+            saveGameState();
             renderUI();
         }
 
+        function playerColumnHtml(p) {
+            return `
+                <div class="player-column" id="playerCol_${p.id}">
+                    <span style="font-weight:bold; font-size:1.05rem; display: flex; align-items: center; gap: 6px;">
+                        <span style="width: 10px; height: 10px; background-color: ${p.color.border}; border-radius: 50%; display: inline-block;"></span>
+                        ${escapeHtml(p.name)}
+                    </span>
+                    <span class="budget" id="playerMoney_${p.id}">$${p.money}</span>
+                    <ul class="roster-list" id="playerRoster_${p.id}"></ul>
+                </div>
+            `;
+        }
+
+        // ---------- Turn / bidding logic ----------
+        function persistState() {
+            if (isOnline) {
+                pushOnlineState().catch(err => console.error("שגיאה בשמירת המצב המקוון", err));
+            } else {
+                saveGameState();
+            }
+        }
+
         function handleAction(type) {
+            if (isOnline) {
+                const activePlayerId = autoFillState.active ? autoFillState.playerId : currentTurnIndex;
+                if (mySeatIndex !== activePlayerId) return; // not your turn - the UI shouldn't even let this happen
+            }
+
             if (type === 'bid') {
                 const amount = parseInt(document.getElementById('bidRange').value);
                 gameState.currentBid = amount;
                 leadingBidderIndex = currentTurnIndex;
                 gameState.isInitial = false;
-                
+
                 moveToNextTurn();
-            } 
+            }
             else if (type === 'pass') {
                 if (gameState.isInitial && currentTurnIndex === leadingBidderIndex) {
                     gameState.isInitial = false;
                     moveToNextTurn();
                 } else {
                     players[currentTurnIndex].isOutFromCurrentLot = true;
-                    
-                    const activeInLot = players.filter(p => !p.isOutFromCurrentLot && p.roster.length < 5);
-                    
+
+                    const activeInLot = players.filter(p => !p.isOutFromCurrentLot && p.roster.length < settings.teamSize);
+
                     if (activeInLot.length <= 1) {
                         const winner = players[leadingBidderIndex];
                         const cost = gameState.currentBid;
-                        
+
                         winner.money -= cost;
                         winner.roster.push({
                             round: currentRoundCounter,
@@ -353,25 +943,25 @@
                         });
                         currentRoundCounter++;
 
-                        currentLotItem = filteredPlayers.shift(); 
-                        
-                        checkAndHandleAutoFill();
+                        currentLotItem = filteredPlayers.shift();
+
+                        if (checkAndHandleAutoFill()) {
+                            return; // moved into the step-through auto-fill screen; it already rendered + saved
+                        }
 
                         gameState.currentBid = 1;
                         gameState.isInitial = true;
-                        
+
                         players.forEach(p => p.isOutFromCurrentLot = false);
-                        
-                        // קביעת מי פותח את הסיבוב הבא לפי התור המקורי ללא קשר למי שזכה!
+
                         roundStarterIndex = (roundStarterIndex + 1) % players.length;
-                        
-                        // דילוג על שחקנים שכבר מילאו 5 שחקנים
+
                         let loops = 0;
-                        while(players[roundStarterIndex].roster.length >= 5 && loops < players.length) {
+                        while (players[roundStarterIndex].roster.length >= settings.teamSize && loops < players.length) {
                             roundStarterIndex = (roundStarterIndex + 1) % players.length;
                             loops++;
                         }
-                        
+
                         leadingBidderIndex = roundStarterIndex;
                         currentTurnIndex = roundStarterIndex;
                     } else {
@@ -379,6 +969,7 @@
                     }
                 }
             }
+            persistState();
             renderUI();
         }
 
@@ -389,69 +980,133 @@
                 loops++;
                 if (loops > players.length * 2) break;
             } while (
-                players[currentTurnIndex].isOutFromCurrentLot || 
-                players[currentTurnIndex].roster.length >= 5
+                players[currentTurnIndex].isOutFromCurrentLot ||
+                players[currentTurnIndex].roster.length >= settings.teamSize
             );
         }
 
+        // ---------- Step-through auto-fill for the last remaining player ----------
         function checkAndHandleAutoFill() {
-            let incompletePlayers = players.filter(p => p.roster.length < 5);
-            
-            while (incompletePlayers.length === 1 && currentLotItem) {
-                const remainingWinner = incompletePlayers[0];
-                
-                remainingWinner.roster.push({
-                    round: 0,
-                    text: `${currentLotItem.name} - ${currentLotItem.team} ($0)`
-                });
-                
-                currentLotItem = filteredPlayers.shift(); 
-                incompletePlayers = players.filter(p => p.roster.length < 5);
+            const incompletePlayers = players.filter(p => p.roster.length < settings.teamSize);
+            if (incompletePlayers.length === 1 && currentLotItem) {
+                autoFillState = { active: true, playerId: incompletePlayers[0].id };
+                persistState();
+                renderUI();
+                return true;
             }
+            return false;
         }
 
+        function confirmAutoFillPick() {
+            if (isOnline && mySeatIndex !== autoFillState.playerId) return;
+
+            const player = players.find(p => p.id === autoFillState.playerId);
+            player.roster.push({
+                round: 0,
+                text: `${currentLotItem.name} - ${currentLotItem.team} ($0)`
+            });
+            currentLotItem = filteredPlayers.shift();
+
+            if (player.roster.length >= settings.teamSize || !currentLotItem) {
+                autoFillState = { active: false, playerId: null };
+            }
+
+            persistState();
+            renderUI();
+        }
+
+        // ---------- Rendering ----------
         function renderUI() {
-            const allDone = players.every(p => p.roster.length >= 5);
-            
-            if (allDone || !currentLotItem) {
+            const allDone = players.every(p => p.roster.length >= settings.teamSize);
+
+            if (allDone || (!currentLotItem && !autoFillState.active)) {
                 document.getElementById('gamePanel').classList.add('hidden');
                 document.getElementById('summaryPanel').classList.remove('hidden');
-                
+
                 players.forEach(p => {
                     document.getElementById(`playerMoney_${p.id}`).innerText = `$${p.money}`;
                     updateRosterList(`playerRoster_${p.id}`, p.roster);
                 });
 
-                const dashboard = document.getElementById('screenshotArea');
                 document.querySelectorAll('.player-column').forEach(el => {
                     el.style.borderColor = 'transparent';
                     el.style.backgroundColor = 'rgba(255,255,255,0.02)';
                 });
-                document.getElementById('finalTeamsContainer').innerHTML = ''; 
-                document.getElementById('finalTeamsContainer').appendChild(dashboard.cloneNode(true));
+
+                document.getElementById('finalTeamsContainer').innerHTML = '';
+                document.getElementById('finalTeamsContainer').appendChild(document.getElementById('screenshotArea').cloneNode(true));
+
+                if (isOnline) {
+                    if (roomChannel) sbClient.removeChannel(roomChannel);
+                } else {
+                    localStorage.removeItem(LS_GAME);
+                }
                 return;
             }
+
+            document.getElementById('gamePanel').classList.remove('hidden');
+            document.getElementById('summaryPanel').classList.add('hidden');
+
+            players.forEach(p => {
+                document.getElementById(`playerMoney_${p.id}`).innerText = `$${p.money}`;
+                updateRosterList(`playerRoster_${p.id}`, p.roster);
+            });
+
+            if (autoFillState.active) {
+                renderAutoFillTurn();
+            } else {
+                renderNormalTurn();
+            }
+        }
+
+        function highlightColumn(playerId, color) {
+            document.querySelectorAll('.player-column').forEach(col => {
+                const pid = parseInt(col.id.replace('playerCol_', ''));
+                if (pid === playerId) {
+                    col.style.borderColor = color.border;
+                    col.style.backgroundColor = color.bg;
+                } else {
+                    col.style.borderColor = 'transparent';
+                    col.style.backgroundColor = 'rgba(255,255,255,0.02)';
+                }
+            });
+        }
+
+        function renderAutoFillTurn() {
+            const player = players.find(p => p.id === autoFillState.playerId);
+
+            const arenaEl = document.getElementById('gameArena');
+            arenaEl.style.backgroundColor = player.color.bg;
+            arenaEl.style.borderColor = player.color.border;
+            highlightColumn(player.id, player.color);
+
+            document.getElementById('turnDisplay').innerText = `🎁 השלמה אוטומטית עבור ${player.name}`;
+            document.getElementById('currentLot').innerText = currentLotItem.name;
+            document.getElementById('currentLotTeam').innerText = currentLotItem.team;
+            document.getElementById('bidDisplay').innerText = `$0`;
+            document.getElementById('bidder').innerText = '(ללא תחרות - שאר השחקנים כבר מלאו את הסגל)';
+
+            document.getElementById('bidSliderContainer').classList.add('hidden');
+            document.getElementById('normalActionBtns').classList.add('hidden');
+
+            const autoBtn = document.getElementById('autoFillActionBtn');
+            autoBtn.classList.remove('hidden');
+            const isMine = !isOnline || mySeatIndex === player.id;
+            autoBtn.disabled = !isMine;
+            autoBtn.innerText = isMine ? "אישור, הבא ⏭️" : `ממתין ל-${player.name}...`;
+        }
+
+        function renderNormalTurn() {
+            document.getElementById('bidSliderContainer').classList.remove('hidden');
+            document.getElementById('normalActionBtns').classList.remove('hidden');
+            document.getElementById('autoFillActionBtn').classList.add('hidden');
 
             const currentPlayer = players[currentTurnIndex];
 
             const arenaEl = document.getElementById('gameArena');
             arenaEl.style.backgroundColor = currentPlayer.color.bg;
             arenaEl.style.borderColor = currentPlayer.color.border;
-
-            players.forEach(p => {
-                document.getElementById(`playerMoney_${p.id}`).innerText = `$${p.money}`;
-                updateRosterList(`playerRoster_${p.id}`, p.roster);
-                
-                const col = document.getElementById(`playerCol_${p.id}`);
-                
-                if (p.id === currentTurnIndex) {
-                    col.style.borderColor = p.color.border;
-                    col.style.backgroundColor = p.color.bg;
-                } else {
-                    col.style.borderColor = 'transparent';
-                    col.style.backgroundColor = 'rgba(255,255,255,0.02)';
-                }
-            });
+            highlightColumn(currentTurnIndex, currentPlayer.color);
 
             document.getElementById('currentLot').innerText = currentLotItem.name;
             document.getElementById('currentLotTeam').innerText = currentLotItem.team;
@@ -461,7 +1116,7 @@
             document.getElementById('turnDisplay').innerText = `${currentPlayer.name}`;
 
             const p = players[currentTurnIndex];
-            const maxBid = p.money - (5 - p.roster.length - 1);
+            const maxBid = p.money - (settings.teamSize - p.roster.length - 1);
             const minBid = gameState.currentBid + 1;
 
             const slider = document.getElementById('bidRange');
@@ -476,10 +1131,21 @@
                 passBtn.className = "btn btn-pass";
             }
 
-            if (minBid > maxBid || p.roster.length >= 5) {
+            const isMyTurn = !isOnline || mySeatIndex === currentTurnIndex;
+            if (isOnline && !isMyTurn) {
+                document.getElementById('bidder').innerText = `(מוביל: ${players[leadingBidderIndex].name}) — ממתין ל${currentPlayer.name}...`;
                 slider.disabled = true;
                 submitBtn.disabled = true;
-                document.getElementById('sliderAmountDisplay').innerText = p.roster.length >= 5 ? "מלא" : "אין תקציב";
+                passBtn.disabled = true;
+                document.getElementById('sliderAmountDisplay').innerText = "לא תורך";
+                return;
+            }
+            passBtn.disabled = false;
+
+            if (minBid > maxBid || p.roster.length >= settings.teamSize) {
+                slider.disabled = true;
+                submitBtn.disabled = true;
+                document.getElementById('sliderAmountDisplay').innerText = p.roster.length >= settings.teamSize ? "מלא" : "אין תקציב";
             } else {
                 slider.disabled = false;
                 submitBtn.disabled = false;
@@ -495,16 +1161,56 @@
         function updateRosterList(id, arr) {
             const el = document.getElementById(id);
             el.innerHTML = '';
-            for(let i = 1; i <= 5; i++) {
-                const item = arr[i-1];
+            for (let i = 1; i <= settings.teamSize; i++) {
+                const item = arr[i - 1];
                 if (item) {
-                    el.innerHTML += `<li>(${item.round}) ${i}. ${item.text}</li>`;
+                    el.innerHTML += `<li>(${item.round}) ${i}. ${escapeHtml(item.text)}</li>`;
                 } else {
                     el.innerHTML += `<li>${i}. -</li>`;
                 }
             }
         }
 
+        // ---------- Mid-game persistence (survive an accidental refresh) ----------
+        function saveGameState() {
+            try {
+                const snapshot = {
+                    settings, players, currentTurnIndex, leadingBidderIndex, roundStarterIndex,
+                    currentLotItem, currentRoundCounter, filteredPlayers, gameState, autoFillState,
+                    mainTitle: document.getElementById('mainTitle').innerText
+                };
+                localStorage.setItem(LS_GAME, JSON.stringify(snapshot));
+            } catch (err) {
+                console.error("שגיאה בשמירת מצב המשחק", err);
+            }
+        }
+
+        function restoreGameState(snapshot) {
+            settings = { ...DEFAULT_SETTINGS, ...(snapshot.settings || {}) };
+            players = snapshot.players || [];
+            currentTurnIndex = snapshot.currentTurnIndex || 0;
+            leadingBidderIndex = snapshot.leadingBidderIndex || 0;
+            roundStarterIndex = snapshot.roundStarterIndex || 0;
+            currentLotItem = snapshot.currentLotItem || null;
+            currentRoundCounter = snapshot.currentRoundCounter || 1;
+            filteredPlayers = snapshot.filteredPlayers || [];
+            gameState = snapshot.gameState || { currentBid: 1, isInitial: true };
+            autoFillState = snapshot.autoFillState || { active: false, playerId: null };
+
+            document.getElementById('mainTitle').innerText = snapshot.mainTitle || document.getElementById('mainTitle').innerText;
+
+            const dashboard = document.getElementById('screenshotArea');
+            dashboard.innerHTML = '';
+            players.forEach(p => { dashboard.innerHTML += playerColumnHtml(p); });
+
+            document.getElementById('setupPanel').classList.add('hidden');
+            document.getElementById('gamePanel').classList.remove('hidden');
+            document.getElementById('summaryPanel').classList.add('hidden');
+
+            renderUI();
+        }
+
+        // ---------- Sharing ----------
         async function shareScreenshot() {
             const targetElement = document.querySelector("#finalTeamsContainer .teams-dashboard");
             const shareBtn = document.getElementById('shareBtn');
@@ -514,7 +1220,7 @@
             try {
                 const canvas = await html2canvas(targetElement, {
                     backgroundColor: "#162447",
-                    scale: 2 
+                    scale: 2
                 });
 
                 canvas.toBlob(async (blob) => {
