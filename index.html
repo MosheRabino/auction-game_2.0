@@ -143,6 +143,7 @@
 
             <div class="arena" id="gameArena">
                 <div class="turn-indicator" id="turnDisplay">-</div>
+                <div id="turnTimerDisplay" style="font-size: 0.9rem; color: var(--muted-text); margin-bottom: 10px;"></div>
                 <div class="lot-name" id="currentLot">-</div>
                 <div class="lot-team" id="currentLotTeam">-</div>
 
@@ -230,6 +231,12 @@
             currentBid: 1,
             isInitial: true
         };
+
+        // ---------- Turn timer: 30s per bidding turn, auto-acts if nobody responds in time ----------
+        const TURN_TIME_LIMIT_MS = 30000;
+        let turnTimerHandle = null;
+        let turnTimerDeadline = null;
+        let turnTimerSignature = null;
 
         // ---------- Online mode state ----------
         // Fill this in with your own Supabase project's URL + anon key (Project Settings ->
@@ -979,8 +986,8 @@
             }
         }
 
-        function handleAction(type) {
-            if (isOnline) {
+        function handleAction(type, isAutoTimeout = false) {
+            if (isOnline && !isAutoTimeout) {
                 const activePlayerId = autoFillState.active ? autoFillState.playerId : currentTurnIndex;
                 if (mySeatIndex !== activePlayerId) return; // not your turn - the UI shouldn't even let this happen
             }
@@ -1043,6 +1050,43 @@
             renderUI();
         }
 
+        // A fresh 30 seconds starts whenever the signature (whose turn + bid state) changes.
+        // When it runs out, this calls the exact same handleAction('pass') the manual button
+        // uses - which already auto-opens at $1 for the opener and auto-declines for everyone
+        // else, so no separate "which case is this" logic is needed here.
+        function ensureTurnTimer(signature) {
+            if (signature !== turnTimerSignature) {
+                turnTimerSignature = signature;
+                turnTimerDeadline = Date.now() + TURN_TIME_LIMIT_MS;
+                if (turnTimerHandle) clearInterval(turnTimerHandle);
+                turnTimerHandle = setInterval(tickTurnTimer, 250);
+            }
+            tickTurnTimer();
+        }
+
+        function tickTurnTimer() {
+            const el = document.getElementById('turnTimerDisplay');
+            const remainingMs = turnTimerDeadline - Date.now();
+            const remainingSec = Math.max(0, Math.ceil(remainingMs / 1000));
+            if (el) el.innerText = `⏱ ${remainingSec} שניות לתור`;
+
+            if (remainingMs <= 0) {
+                if (turnTimerHandle) { clearInterval(turnTimerHandle); turnTimerHandle = null; }
+                // Any connected client can carry out a timed-out turn - not just the active
+                // player's own device. Since the resulting pass/open action is fully determined
+                // by the current state, it doesn't matter who submits it; this also means the
+                // game doesn't get stuck if the active player's own device is closed or offline.
+                handleAction('pass', true);
+            }
+        }
+
+        function clearTurnTimer() {
+            if (turnTimerHandle) { clearInterval(turnTimerHandle); turnTimerHandle = null; }
+            turnTimerSignature = null;
+            const el = document.getElementById('turnTimerDisplay');
+            if (el) el.innerText = '';
+        }
+
         function moveToNextTurn() {
             let loops = 0;
             do {
@@ -1090,6 +1134,8 @@
             const allDone = players.every(p => p.roster.length >= settings.teamSize);
 
             if (allDone || (!currentLotItem && !autoFillState.active)) {
+                clearTurnTimer();
+
                 document.getElementById('gamePanel').classList.add('hidden');
                 document.getElementById('summaryPanel').classList.remove('hidden');
 
@@ -1103,8 +1149,12 @@
                     el.style.backgroundColor = 'rgba(255,255,255,0.02)';
                 });
 
+                const summaryClone = document.getElementById('screenshotArea').cloneNode(true);
+                summaryClone.removeAttribute('id');
+                summaryClone.querySelectorAll('[id]').forEach(el => el.removeAttribute('id'));
+                summaryClone.querySelectorAll('.budget').forEach(el => el.style.display = 'none');
                 document.getElementById('finalTeamsContainer').innerHTML = '';
-                document.getElementById('finalTeamsContainer').appendChild(document.getElementById('screenshotArea').cloneNode(true));
+                document.getElementById('finalTeamsContainer').appendChild(summaryClone);
 
                 if (!isOnline) {
                     localStorage.removeItem(LS_GAME);
@@ -1153,6 +1203,8 @@
         }
 
         function renderAutoFillTurn() {
+            clearTurnTimer(); // the 30s clock only applies to competitive bidding turns, not auto-fill picks
+
             const player = players.find(p => p.id === autoFillState.playerId);
 
             const arenaEl = document.getElementById('gameArena');
@@ -1194,6 +1246,11 @@
             document.getElementById('bidDisplay').innerText = `$${gameState.currentBid}`;
             document.getElementById('bidder').innerText = `(מוביל: ${players[leadingBidderIndex].name})`;
             document.getElementById('turnDisplay').innerText = `${currentPlayer.name}`;
+
+            // A fresh 30s clock for every distinct turn - this signature changes on essentially
+            // every action (bid/pass), so a genuinely new turn always resets it.
+            const turnSignature = `${currentTurnIndex}|${currentRoundCounter}|${gameState.currentBid}|${gameState.isInitial}|${leadingBidderIndex}`;
+            ensureTurnTimer(turnSignature);
 
             const p = players[currentTurnIndex];
             const maxBid = p.money - (settings.teamSize - p.roster.length - 1);
