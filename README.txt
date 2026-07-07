@@ -156,10 +156,15 @@ Clicking the ⚙️ settings button on the main screen opens a panel with:
 
 | Setting | Range | Default |
 |---|---|---|
-| Number of players | 2–10 | 2 |
+| Number of players *(local mode only)* | 2–10 | 2 |
 | Budget per player | $5–$100 | $20 |
 | Roster size (players each person buys) | 5–12 | 5 |
 | Number of leagues in the pool | 1 up to however many league files exist | 1 |
+
+**Local mode** uses the player-count setting to decide how many name fields to show up
+front. **Online mode** doesn't use it at all - anyone can join an open room (up to 10
+people) whenever they like, and the host clicks "Start game" once at least 2 people
+have joined, whether that's all 10 or just 2.
 
 When you pick **more than one league**, a separate card opens in the lobby for each
 league - with its own league selector and its own list of teams to check/uncheck. The

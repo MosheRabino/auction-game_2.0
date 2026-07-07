@@ -65,7 +65,7 @@
 <body>
 
     <header>
-        <h1 id="mainTitle">🏆 מכירה פומבית - בחירת ליגה</h1>
+        <h1 id="mainTitle">🏀מכירה פומבית - שחקנים🏀</h1>
     </header>
 
     <div class="container">
@@ -114,7 +114,7 @@
 
             <div class="settings-panel hidden" id="settingsPanel">
                 <div class="settings-grid">
-                    <label>מספר משתתפים (2-10)
+                    <label id="numPlayersSettingRow">מספר משתתפים (2-10)
                         <input type="number" id="setNumPlayers" min="2" max="10" value="2">
                     </label>
                     <label>תקציב לכל שחקן ($5-$100)
@@ -196,6 +196,10 @@
         // ---------- Settings ----------
         const DEFAULT_SETTINGS = { numPlayers: 2, budget: 20, teamSize: 5, numLeagues: 1 };
         let settings = { ...DEFAULT_SETTINGS };
+
+        // Online rooms don't use settings.numPlayers at all - anyone can join up to this cap,
+        // and the host starts whenever they're ready with however many have actually joined.
+        const MAX_ONLINE_SEATS = 10;
 
         // Ordered so that any two consecutive players (by turn order) are 108° apart on the
         // color wheel - the maximum possible even spacing for a 10-color rotating palette.
@@ -370,6 +374,7 @@
             renderLeagueSlots();
 
             document.getElementById('playerNamesHeading').innerText = isOnline ? 'השם שלך' : 'שמות השחקנים';
+            document.getElementById('numPlayersSettingRow').classList.toggle('hidden', isOnline);
 
             const startBtn = document.getElementById('startBtn');
             startBtn.innerText = isOnline ? "צור חדר מקוון 🌐" : "גמרנו, התחל משחק! 🚀";
@@ -479,9 +484,12 @@
                     if (!seenGlobal.has(key)) { seenGlobal.add(key); pool.push(p); }
                 });
             });
-            const totalSlotsNeeded = settings.numPlayers * settings.teamSize;
-            if (pool.length < totalSlotsNeeded) {
-                alert(`יש מעט מדי שחקנים בקבוצות שנבחרו! בשביל ${settings.numPlayers} משתתפים (${settings.teamSize} בסגל כל אחד) צריך לפחות ${totalSlotsNeeded} שחקנים, ויש רק ${pool.length}.`);
+            // Online rooms don't have a fixed player count up front - people just join - so this
+            // is only a sanity check against the smallest possible game (2 players). The real
+            // check against however many actually joined happens again when the host starts.
+            const minSlotsNeeded = 2 * settings.teamSize;
+            if (pool.length < minSlotsNeeded) {
+                alert(`יש מעט מדי שחקנים בקבוצות שנבחרו! גם בשביל 2 משתתפים בלבד (${settings.teamSize} בסגל כל אחד) צריך לפחות ${minSlotsNeeded} שחקנים, ויש רק ${pool.length}.`);
                 return;
             }
 
@@ -491,7 +499,7 @@
             localStorage.setItem(LS_LAST_ROOM, roomCode);
 
             const seats = [];
-            for (let i = 0; i < settings.numPlayers; i++) seats.push({ name: '', uid: null });
+            for (let i = 0; i < MAX_ONLINE_SEATS; i++) seats.push({ name: '', uid: null });
             seats[0] = { name: hostName, uid: myUid };
 
             const { error } = await sbClient.from('rooms').insert({
@@ -550,56 +558,78 @@
         function renderRoomLobbySeats(lobby, isHost) {
             const seats = lobby.seats || [];
             const container = document.getElementById('roomSeatsContainer');
+            const claimedSeats = seats.filter(s => s && s.uid);
 
-            container.innerHTML = seats.map((seat, i) => {
-                if (seat && seat.uid) {
-                    const isMe = seat.uid === myUid;
-                    return `<div class="team-item" style="justify-content:space-between; background:rgba(0,0,0,0.15); padding:10px; border-radius:6px;">
-                                <span>${escapeHtml(seat.name)} ${isMe ? '(אתה)' : ''}</span>
-                                <span>✅</span>
-                            </div>`;
-                } else if (mySeatIndex === null) {
-                    return `<div style="display:flex; flex-direction:column; gap:6px; background:rgba(0,0,0,0.15); padding:10px; border-radius:6px;">
-                                <input type="text" class="name-input" id="seatClaimInput_${i}" maxlength="12" placeholder="השם שלך">
-                                <button class="btn btn-continue" style="margin-bottom:0;" onclick="claimSeat(${i})">זה אני!</button>
-                            </div>`;
-                } else {
-                    return `<div class="team-item" style="background:rgba(0,0,0,0.1); padding:10px; border-radius:6px;"><span style="color:var(--muted-text);">מקום פנוי...</span></div>`;
-                }
+            let html = claimedSeats.map(seat => {
+                const isMe = seat.uid === myUid;
+                return `<div class="team-item" style="justify-content:space-between; background:rgba(0,0,0,0.15); padding:10px; border-radius:6px;">
+                            <span>${escapeHtml(seat.name)} ${isMe ? '(אתה)' : ''}</span>
+                            <span>✅</span>
+                        </div>`;
             }).join('');
 
-            const allClaimed = seats.length > 0 && seats.every(s => s && s.uid);
+            if (mySeatIndex === null) {
+                if (claimedSeats.length < seats.length) {
+                    html += `<div style="display:flex; flex-direction:column; gap:6px; background:rgba(0,0,0,0.15); padding:10px; border-radius:6px; margin-top:10px;">
+                                <input type="text" class="name-input" id="joinSeatNameInput" maxlength="12" placeholder="השם שלך">
+                                <button class="btn btn-continue" style="margin-bottom:0;" onclick="joinOpenSeat()">הצטרף למשחק!</button>
+                             </div>`;
+                } else {
+                    html += `<div class="team-item" style="background:rgba(0,0,0,0.1); padding:10px; border-radius:6px; margin-top:10px;"><span style="color:var(--muted-text);">החדר מלא (${seats.length} שחקנים)</span></div>`;
+                }
+            }
+
+            container.innerHTML = html;
+
             if (isHost) {
                 const startBtn = document.getElementById('hostStartBtn');
-                startBtn.disabled = !allClaimed;
-                startBtn.innerText = allClaimed ? "התחל משחק 🚀" : `ממתין לעוד ${seats.filter(s => !s || !s.uid).length} שחקנים...`;
+                const enoughPlayers = claimedSeats.length >= 2;
+                startBtn.disabled = !enoughPlayers;
+                startBtn.innerText = enoughPlayers
+                    ? `התחל משחק 🚀 (${claimedSeats.length} שחקנים)`
+                    : `צריך לפחות 2 שחקנים (יש ${claimedSeats.length})`;
             }
         }
 
-        async function claimSeat(i) {
-            const input = document.getElementById(`seatClaimInput_${i}`);
+        // Anyone can join any still-open seat (no fixed player count). Retries against the next
+        // open seat if two people happen to grab the same one at nearly the same instant - the
+        // atomic claim_seat function guarantees only one of them actually succeeds per seat.
+        async function joinOpenSeat() {
+            const input = document.getElementById('joinSeatNameInput');
             const name = (input.value || '').trim();
             if (!name) { alert("צריך להזין שם."); return; }
 
-            // claim_seat is a Postgres function that does an atomic "claim only if still empty"
-            // UPDATE, so two people clicking the same seat at once can't both succeed - see README.
-            const { data, error } = await sbClient.rpc('claim_seat', {
-                p_room_code: roomCode, p_seat_index: i, p_name: name, p_uid: myUid
-            });
+            for (let attempt = 0; attempt < MAX_ONLINE_SEATS + 2; attempt++) {
+                const { data } = await sbClient.from('rooms').select('lobby').eq('room_code', roomCode).maybeSingle();
+                const seats = (data && data.lobby && data.lobby.seats) || [];
+                const openIndex = seats.findIndex(s => !s || !s.uid);
+                if (openIndex === -1) {
+                    alert("החדר מלא, אין יותר מקומות פנויים.");
+                    return;
+                }
 
-            if (error || !data) {
-                alert("מישהו כבר תפס את המקום הזה, נסו מקום אחר.");
-                return;
+                const { data: claimed } = await sbClient.rpc('claim_seat', {
+                    p_room_code: roomCode, p_seat_index: openIndex, p_name: name, p_uid: myUid
+                });
+
+                if (claimed) {
+                    mySeatIndex = openIndex;
+                    return;
+                }
+                // someone else grabbed that exact seat a moment ago - loop and try the next open one
             }
-            mySeatIndex = i;
+            alert("לא הצלחנו למצוא מקום פנוי כרגע, נסו שוב.");
         }
 
         async function hostStartOnlineGame() {
             const { data } = await sbClient.from('rooms').select('lobby').eq('room_code', roomCode).maybeSingle();
             const lobby = data && data.lobby;
             if (!lobby) return;
-            const seats = lobby.seats || [];
-            if (!seats.every(s => s && s.uid)) { alert("עדיין לא כל המקומות תפוסים."); return; }
+            const claimedSeats = (lobby.seats || []).filter(s => s && s.uid);
+            if (claimedSeats.length < 2) {
+                alert("צריך לפחות 2 שחקנים כדי להתחיל את המשחק.");
+                return;
+            }
 
             settings = { ...DEFAULT_SETTINGS, ...lobby.settings };
 
@@ -613,7 +643,13 @@
                 });
             });
 
-            players = seats.map((seat, index) => ({
+            const totalSlotsNeeded = claimedSeats.length * settings.teamSize;
+            if (filteredPlayers.length < totalSlotsNeeded) {
+                alert(`יש מעט מדי שחקנים בקבוצות שנבחרו! בשביל ${claimedSeats.length} משתתפים (${settings.teamSize} בסגל כל אחד) צריך לפחות ${totalSlotsNeeded} שחקנים, ויש רק ${filteredPlayers.length}.`);
+                return;
+            }
+
+            players = claimedSeats.map((seat, index) => ({
                 id: index,
                 name: seat.name,
                 uid: seat.uid,
@@ -633,7 +669,7 @@
             autoFillState = { active: false, playerId: null };
 
             const leagueNames = (lobby.leagueSlots || []).filter(s => s.file).map(s => getLeagueDisplayName(s.file));
-            const title = `🏆 ${leagueNames.join(' + ')}`;
+            const title = `🏀 ${leagueNames.join(' + ')}`;
             document.getElementById('mainTitle').innerText = title;
 
             await pushOnlineState(title);
@@ -988,7 +1024,7 @@
             }
 
             const leagueNames = leagueSlots.filter(s => s.file).map(s => getLeagueDisplayName(s.file));
-            document.getElementById('mainTitle').innerText = `🏆 ${leagueNames.join(' + ')}`;
+            document.getElementById('mainTitle').innerText = `🏀 ${leagueNames.join(' + ')}`;
 
             shuffleArray(filteredPlayers);
 
