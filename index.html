@@ -98,6 +98,7 @@
             <div style="text-align:center; margin-bottom:15px;">
                 <div style="color: var(--muted-text); font-size:0.9rem;">קוד החדר לשיתוף עם חברים:</div>
                 <div id="roomCodeDisplay" style="font-size:2rem; font-weight:bold; color: var(--accent-color); letter-spacing:4px;">-----</div>
+                <button class="btn" id="shareRoomBtn" onclick="shareRoomLink()" style="margin-top:10px;">🔗 שתף קישור לחדר</button>
             </div>
             <div id="roomSeatsContainer" style="display:flex; flex-direction:column; gap:10px; margin-bottom:15px;"></div>
             <button class="btn hidden" id="hostStartBtn" onclick="hostStartOnlineGame()">התחל משחק 🚀</button>
@@ -143,7 +144,7 @@
 
             <div class="arena" id="gameArena">
                 <div class="turn-indicator" id="turnDisplay">-</div>
-                <div id="turnTimerDisplay" style="font-size: 0.9rem; color: var(--muted-text); margin-bottom: 10px;"></div>
+                <div id="turnTimerDisplay" style="font-size: 1.5rem; font-weight: bold; color: var(--muted-text); margin-bottom: 10px;"></div>
                 <div class="lot-name" id="currentLot">-</div>
                 <div class="lot-team" id="currentLotTeam">-</div>
 
@@ -239,14 +240,23 @@
         let turnTimerSignature = null;
 
         // ---------- Online mode state ----------
-        // Fill this in with your own Supabase project's URL + anon key (Project Settings ->
-        // API). The anon key is meant to be public/embedded in client code - it is NOT a secret
-        // like a service-role key. Security is enforced through Row Level Security policies on
-        // the "rooms" table (see README.md for the exact SQL to run), not by hiding this key.
-        const SUPABASE_CONFIG = {
-            url: "https://jhmfkuuxarhrmwmgxwlb.supabase.co",
-            anonKey: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpobWZrdXV4YXJocm13bWd4d2xiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODM0NDU4NDIsImV4cCI6MjA5OTAyMTg0Mn0.DXQrsf4a7PvS1rfLY1TW3I_OIfImD9P3MfUpN4lqqAk"
-        };
+        // Loaded at boot from config.json (a separate file, kept out of index.html) so that
+        // regenerating/updating this file never overwrites your actual project credentials.
+        // See README.md for the config.json format and how to set up the Supabase project.
+        let SUPABASE_CONFIG = { url: "", anonKey: "" };
+
+        async function loadSupabaseConfig() {
+            try {
+                const res = await fetch('config.json');
+                if (res.ok) {
+                    const cfg = await res.json();
+                    SUPABASE_CONFIG.url = cfg.url || "";
+                    SUPABASE_CONFIG.anonKey = cfg.anonKey || "";
+                }
+            } catch (err) {
+                console.error("לא ניתן לטעון config.json - מצב מקוון לא יהיה זמין עד שהקובץ יוגדר", err);
+            }
+        }
 
         let isOnline = false;
         let roomCode = null;
@@ -257,7 +267,8 @@
         let roomChannel = null;
 
         function isSupabaseConfigured() {
-            return !SUPABASE_CONFIG.url.includes('YOUR_') && !SUPABASE_CONFIG.anonKey.includes('YOUR_');
+            return !!SUPABASE_CONFIG.url && !!SUPABASE_CONFIG.anonKey &&
+                   !SUPABASE_CONFIG.url.includes('YOUR_') && !SUPABASE_CONFIG.anonKey.includes('YOUR_');
         }
 
         async function ensureSupabaseAuth() {
@@ -280,7 +291,18 @@
         }
 
         // ---------- Boot ----------
-        window.onload = function() {
+        window.onload = async function() {
+            await loadSupabaseConfig();
+
+            const roomFromUrl = new URLSearchParams(window.location.search).get('room');
+            if (roomFromUrl) {
+                // Someone opened a shared room link - skip straight to joining that room,
+                // no need to go through the mode-select / "enter code" screens at all.
+                document.getElementById('modeSelectPanel').classList.add('hidden');
+                attemptJoinRoom(roomFromUrl.toUpperCase().trim());
+                return;
+            }
+
             if (isSupabaseConfigured()) {
                 ensureSupabaseAuth().catch(() => {}); // warm up in the background; errors surface later if actually needed
             }
@@ -292,6 +314,34 @@
                 btn.onclick = () => rejoinLastRoom(lastRoom);
             }
         };
+
+        async function shareRoomLink() {
+            const url = new URL(window.location.href);
+            url.search = '';
+            url.searchParams.set('room', roomCode);
+            const shareUrl = url.toString();
+
+            if (navigator.share) {
+                try {
+                    await navigator.share({
+                        title: 'הצטרפו למכירה הפומבית שלי!',
+                        text: `הצטרפו למשחק - קוד החדר: ${roomCode}`,
+                        url: shareUrl
+                    });
+                } catch (err) {
+                    // Share sheet cancelled/dismissed by the user - not an error worth surfacing.
+                    console.log('השיתוף בוטל', err);
+                }
+                return;
+            }
+
+            try {
+                await navigator.clipboard.writeText(shareUrl);
+                alert(`הקישור הועתק! שלחו אותו לחברים:\n${shareUrl}`);
+            } catch (err) {
+                prompt('העתיקו את הקישור הזה ושלחו לחברים:', shareUrl);
+            }
+        }
 
         async function loadLeagueFilesAndShowSetup() {
             try {

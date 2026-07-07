@@ -27,6 +27,7 @@ to play together (each from their own device, per what's described below).
 
 ```
 index.html      - the whole game: HTML + CSS + JS, one file
+config.json     - your Supabase project URL + anon key (only needed for online mode - see below)
 Leagues.json     - list of the available league file names
 PT_26.json       - example league file
 GS_26.json       - example league file
@@ -131,14 +132,23 @@ account required.
 
 4. **Project Settings (⚙️) → API.** Copy the **Project URL** and the **anon public**
    key.
-5. Open `index.html`, find `SUPABASE_CONFIG` (near the start of the `<script>` tag),
-   and replace `url` and `anonKey` with the values you copied.
+5. Open `config.json` (a small separate file in the same folder as `index.html`) and
+   replace the two placeholder values:
+   ```json
+   {
+     "url": "https://your-project.supabase.co",
+     "anonKey": "your-anon-key"
+   }
+   ```
+   Keeping these in their own file means you can freely update/replace `index.html`
+   later without ever having to re-enter your credentials - `index.html` just reads
+   `config.json` at startup.
 
 Worth knowing: the **anon** key is not a secret - it's normal and safe to embed it
-directly in client code (and to publish it in a public GitHub repo). Security is based
-on **Row Level Security** and on the room code itself not being guessable - not on
-hiding the key. If you want stronger protection, you can lengthen the room code in
-the code (`generateRoomCode` in `index.html`).
+directly in client code (and to publish it in a public GitHub repo, `config.json`
+included). Security is based on **Row Level Security** and on the room code itself
+not being guessable - not on hiding the key. If you want stronger protection, you can
+lengthen the room code in the code (`generateRoomCode` in `index.html`).
 
 ## Game settings
 
