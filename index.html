@@ -21,7 +21,6 @@
         select option { background: var(--card-bg); color: white; }
         .btn { background-color: var(--accent-color); color: #000; border: none; padding: 12px 24px; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 1rem; width: 100%; margin-bottom: 10px; }
         .btn:disabled { background-color: #555 !important; color: #aaa !important; }
-        .btn-secondary { background-color: #34495e; color: white; font-size: 0.9rem; padding: 8px 16px; margin-bottom: 15px; width: auto; align-self: center; }
 
         .setup-header-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
         .setup-header-row h2 { border-bottom: none; margin-bottom: 0; padding-bottom: 0; }
@@ -75,14 +74,14 @@
             <h2>איך רוצים לשחק?</h2>
             <button class="btn" onclick="chooseLocalMode()">📱 מקומי (מעבירים מכשיר אחד)</button>
             <button class="btn" style="background-color:#00b894;" onclick="chooseOnlineMode()">🌐 מקוון (כל אחד מהמכשיר שלו)</button>
-            <button class="btn btn-secondary hidden" id="rejoinLastRoomBtn" style="width:100%;"></button>
+            <button class="btn hidden" id="rejoinLastRoomBtn"></button>
         </div>
 
         <div class="panel hidden" id="onlineChoicePanel">
             <h2>משחק מקוון</h2>
             <button class="btn" onclick="chooseCreateRoom()">➕ צור חדר חדש</button>
             <button class="btn" onclick="chooseJoinRoom()">🔑 הצטרף לחדר עם קוד</button>
-            <button class="btn-secondary" onclick="location.reload()">⬅ חזרה</button>
+            <button class="btn" onclick="location.reload()">⬅ חזרה</button>
         </div>
 
         <div class="panel hidden" id="joinRoomPanel">
@@ -91,7 +90,7 @@
                 <input type="text" class="name-input" id="joinRoomCodeInput" maxlength="6" placeholder="קוד החדר (למשל: AB3XZ)" style="text-align:center; font-size:1.3rem; letter-spacing:3px;">
             </div>
             <button class="btn" onclick="joinRoomSubmit()">הצטרף 🚪</button>
-            <button class="btn-secondary" onclick="location.reload()">⬅ חזרה</button>
+            <button class="btn" onclick="location.reload()">⬅ חזרה</button>
         </div>
 
         <div class="panel hidden" id="roomLobbyPanel">
@@ -102,11 +101,11 @@
             </div>
             <div id="roomSeatsContainer" style="display:flex; flex-direction:column; gap:10px; margin-bottom:15px;"></div>
             <button class="btn hidden" id="hostStartBtn" onclick="hostStartOnlineGame()">התחל משחק 🚀</button>
-            <button class="btn-secondary" onclick="if(confirm('לעזוב את הלובי?')) location.reload();">⬅ עזוב</button>
+            <button class="btn" onclick="if(confirm('לעזוב את הלובי?')) location.reload();">⬅ עזוב</button>
         </div>
 
         <div class="panel hidden" id="setupPanel">
-            <button class="btn-secondary" onclick="if(confirm('לחזור להתחלה?')) location.reload();">⬅ חזרה להתחלה</button>
+            <button class="btn" onclick="if(confirm('לחזור להתחלה?')) location.reload();">⬅ חזרה להתחלה</button>
             <div class="setup-header-row">
                 <h2>הגדרת המשחק</h2>
                 <button class="gear-btn" onclick="toggleSettingsPanel()">⚙️ הגדרות</button>
@@ -130,7 +129,7 @@
                 <button class="btn" onclick="applySettings()">שמור הגדרות ✅</button>
             </div>
 
-            <h2>שמות השחקנים</h2>
+            <h2 id="playerNamesHeading">שמות השחקנים</h2>
             <div class="setup-row" id="playerNamesContainer"></div>
 
             <h2>ליגות וקבוצות</h2>
@@ -140,7 +139,7 @@
         </div>
 
         <div class="game-layout hidden" id="gamePanel">
-            <button class="btn btn-secondary" onclick="resetToHome()">🏠 חזרה לעמוד הראשי</button>
+            <button class="btn" onclick="resetToHome()">🏠 חזרה לעמוד הראשי</button>
 
             <div class="arena" id="gameArena">
                 <div class="turn-indicator" id="turnDisplay">-</div>
@@ -179,7 +178,9 @@
             <div id="finalTeamsContainer" style="margin-bottom: 25px; margin-top: 20px;"></div>
 
             <button class="btn" id="shareBtn" onclick="shareScreenshot()" style="background-color: var(--success-color); color: black;">📸 שתף צילום מסך</button>
-            <button class="btn btn-secondary" onclick="startNewGame()" style="display: block; margin: 10px auto;">משחק חדש 🔄</button>
+            <button class="btn" id="newRoundBtn" onclick="startNewRound()">סיבוב חדש 🔄</button>
+            <div id="waitingForHostNote" class="hidden" style="color: var(--muted-text); font-size: 0.9rem; margin-bottom: 10px;">ממתינים למארח שיתחיל סיבוב חדש...</div>
+            <button class="btn" onclick="leaveToMainMenu()">🏠 יציאה לתפריט הראשי</button>
         </div>
 
     </div>
@@ -236,14 +237,15 @@
         // like a service-role key. Security is enforced through Row Level Security policies on
         // the "rooms" table (see README.md for the exact SQL to run), not by hiding this key.
         const SUPABASE_CONFIG = {
-            url: "https://jhmfkuuxarhrmwmgxwlb.supabase.co",
-            anonKey: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpobWZrdXV4YXJocm13bWd4d2xiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODM0NDU4NDIsImV4cCI6MjA5OTAyMTg0Mn0.DXQrsf4a7PvS1rfLY1TW3I_OIfImD9P3MfUpN4lqqAk"
+            url: "https://YOUR_PROJECT.supabase.co",
+            anonKey: "YOUR_ANON_KEY"
         };
 
         let isOnline = false;
         let roomCode = null;
         let myUid = null;
         let mySeatIndex = null;
+        let amIHost = false;
         let sbClient = null;
         let roomChannel = null;
 
@@ -309,6 +311,8 @@
             renderSettingsInputs();
             renderPlayerNameInputs();
             renderLeagueSlots();
+
+            document.getElementById('playerNamesHeading').innerText = isOnline ? 'השם שלך' : 'שמות השחקנים';
 
             const startBtn = document.getElementById('startBtn');
             startBtn.innerText = isOnline ? "צור חדר מקוון 🌐" : "גמרנו, התחל משחק! 🚀";
@@ -386,8 +390,9 @@
             const lobby = data.lobby;
             const existingSeatIndex = (lobby.seats || []).findIndex(s => s && s.uid === myUid);
             mySeatIndex = existingSeatIndex >= 0 ? existingSeatIndex : null;
+            amIHost = lobby.hostUid === myUid;
 
-            await enterRoomLobby(lobby.hostUid === myUid);
+            await enterRoomLobby(amIHost);
         }
 
         // ---------- Hosting an online room ----------
@@ -450,6 +455,7 @@
 
             saveLobbyToStorage();
             mySeatIndex = 0;
+            amIHost = true;
 
             document.getElementById('setupPanel').classList.add('hidden');
             await enterRoomLobby(true);
@@ -730,8 +736,10 @@
         function renderPlayerNameInputs() {
             const container = document.getElementById('playerNamesContainer');
             container.innerHTML = '';
-            for (let i = 1; i <= settings.numPlayers; i++) {
-                const val = (_savedPlayerNames && _savedPlayerNames[i - 1]) ? _savedPlayerNames[i - 1] : `שחקן ${i}`;
+            const count = isOnline ? 1 : settings.numPlayers; // online: only the host types a name here - everyone else picks theirs when they join
+            for (let i = 1; i <= count; i++) {
+                const defaultVal = isOnline ? 'השם שלי' : `שחקן ${i}`;
+                const val = (_savedPlayerNames && _savedPlayerNames[i - 1]) ? _savedPlayerNames[i - 1] : defaultVal;
                 container.innerHTML += `<input type="text" class="name-input player-name-field" maxlength="12" value="${escapeHtml(val)}" onchange="saveLobbyToStorage()">`;
             }
         }
@@ -815,9 +823,71 @@
             }
         }
 
-        function startNewGame() {
+        function leaveToMainMenu() {
             if (!isOnline) localStorage.removeItem(LS_GAME);
+            localStorage.removeItem(LS_LAST_ROOM);
             location.reload();
+        }
+
+        // Starts a fresh round with the SAME players (same names/seats) - just empties every
+        // roster, refills every budget, and rebuilds the player pool from the same league/team
+        // selections. Local mode does this instantly in the browser; online mode has the host
+        // re-run the same "start" logic against the room's still-existing lobby data, which
+        // resets everyone and pushes the new round to every connected device.
+        function startNewRound() {
+            if (isOnline) {
+                if (!amIHost) {
+                    alert("רק המארח יכול להתחיל סיבוב חדש.");
+                    return;
+                }
+                hostStartOnlineGame();
+                return;
+            }
+
+            const seenGlobal = new Set();
+            filteredPlayers = [];
+            leagueSlots.forEach((slot, i) => {
+                if (!slot.file) return;
+                const checked = Array.from(document.querySelectorAll(`.team-cb[data-slot="${i}"]`))
+                                      .filter(cb => cb.checked)
+                                      .map(cb => cb.value);
+                getPlayersForFile(slot.file).filter(p => checked.includes(p.team)).forEach(p => {
+                    const key = `${slot.file}_${p.name}_${p.team}`;
+                    if (!seenGlobal.has(key)) { seenGlobal.add(key); filteredPlayers.push({ name: p.name, team: p.team }); }
+                });
+            });
+
+            const totalSlotsNeeded = players.length * settings.teamSize;
+            if (filteredPlayers.length < totalSlotsNeeded) {
+                alert(`אין מספיק שחקנים בקבוצות שנבחרו כדי להתחיל סיבוב נוסף (צריך ${totalSlotsNeeded}, ויש רק ${filteredPlayers.length}).`);
+                return;
+            }
+
+            shuffleArray(filteredPlayers);
+
+            players.forEach(p => {
+                p.money = settings.budget;
+                p.roster = [];
+                p.isOutFromCurrentLot = false;
+            });
+
+            currentRoundCounter = 1;
+            currentLotItem = filteredPlayers.shift();
+            gameState = { currentBid: 1, isInitial: true };
+            roundStarterIndex = 0;
+            currentTurnIndex = 0;
+            leadingBidderIndex = 0;
+            autoFillState = { active: false, playerId: null };
+
+            const dashboard = document.getElementById('screenshotArea');
+            dashboard.innerHTML = '';
+            players.forEach(p => { dashboard.innerHTML += playerColumnHtml(p); });
+
+            document.getElementById('summaryPanel').classList.add('hidden');
+            document.getElementById('gamePanel').classList.remove('hidden');
+
+            saveGameState();
+            renderUI();
         }
 
         // ---------- Starting a game ----------
@@ -1036,10 +1106,20 @@
                 document.getElementById('finalTeamsContainer').innerHTML = '';
                 document.getElementById('finalTeamsContainer').appendChild(document.getElementById('screenshotArea').cloneNode(true));
 
-                if (isOnline) {
-                    if (roomChannel) sbClient.removeChannel(roomChannel);
-                } else {
+                if (!isOnline) {
                     localStorage.removeItem(LS_GAME);
+                }
+                // Note: the realtime channel is intentionally NOT torn down here anymore -
+                // "New round" reuses the same room/channel instead of leaving it.
+
+                const newRoundBtn = document.getElementById('newRoundBtn');
+                const waitingNote = document.getElementById('waitingForHostNote');
+                if (isOnline && !amIHost) {
+                    newRoundBtn.classList.add('hidden');
+                    waitingNote.classList.remove('hidden');
+                } else {
+                    newRoundBtn.classList.remove('hidden');
+                    waitingNote.classList.add('hidden');
                 }
                 return;
             }
