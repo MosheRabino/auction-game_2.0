@@ -454,7 +454,7 @@
 
             document.getElementById('bidDisplay').innerText = `$${gameState.currentBid}`;
             document.getElementById('bidder').innerText = `(מוביל: ${players[leadingBidderIndex].name})`;
-            document.getElementById('turnDisplay').innerText = `👉 תור: ${currentPlayer.name}`;
+            document.getElementById('turnDisplay').innerText = `${currentPlayer.name}`;
 
             const p = players[currentTurnIndex];
             const maxBid = p.money - (5 - p.roster.length - 1);
