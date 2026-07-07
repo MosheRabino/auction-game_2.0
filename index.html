@@ -139,8 +139,9 @@
         let players = [];
         let currentTurnIndex = 0;
         let leadingBidderIndex = 0;
+        let roundStarterIndex = 0; // המשתנה החדש שעוקב אחרי מי שתורו לפתוח את הסיבוב הבא
         let currentLotItem = null; 
-        let currentRoundCounter = 1; // מונה הסיבובים הכללי של המשחק
+        let currentRoundCounter = 1; 
 
         const playerColors = [
             { name: "כחול עמוק", bg: "rgba(41, 128, 185, 0.25)", border: "#2980b9" },
@@ -262,7 +263,7 @@
         function startGame() {
             const nameFields = document.querySelectorAll('.player-name-field');
             players = [];
-            currentRoundCounter = 1; // איפוס המונה בתחילת משחק
+            currentRoundCounter = 1; 
             
             nameFields.forEach((field, index) => {
                 const colorConfig = playerColors[index % playerColors.length];
@@ -313,8 +314,9 @@
             
             gameState.currentBid = 1;
             gameState.isInitial = true;
-            currentTurnIndex = 0;
-            leadingBidderIndex = 0;
+            roundStarterIndex = 0; // הראשון ברשימה מתחיל
+            currentTurnIndex = roundStarterIndex;
+            leadingBidderIndex = roundStarterIndex;
 
             document.getElementById('setupPanel').classList.add('hidden');
             document.getElementById('gamePanel').classList.remove('hidden');
@@ -344,7 +346,6 @@
                         const winner = players[leadingBidderIndex];
                         const cost = gameState.currentBid;
                         
-                        // קנייה רגילה - שומר את מספר הסיבוב הנוכחי ומעלה את המונה
                         winner.money -= cost;
                         winner.roster.push({
                             round: currentRoundCounter,
@@ -361,14 +362,18 @@
                         
                         players.forEach(p => p.isOutFromCurrentLot = false);
                         
-                        let nextStarter = (leadingBidderIndex + 1) % players.length;
+                        // קביעת מי פותח את הסיבוב הבא לפי התור המקורי ללא קשר למי שזכה!
+                        roundStarterIndex = (roundStarterIndex + 1) % players.length;
+                        
+                        // דילוג על שחקנים שכבר מילאו 5 שחקנים
                         let loops = 0;
-                        while(players[nextStarter].roster.length >= 5 && loops < players.length) {
-                            nextStarter = (nextStarter + 1) % players.length;
+                        while(players[roundStarterIndex].roster.length >= 5 && loops < players.length) {
+                            roundStarterIndex = (roundStarterIndex + 1) % players.length;
                             loops++;
                         }
-                        leadingBidderIndex = nextStarter;
-                        currentTurnIndex = leadingBidderIndex;
+                        
+                        leadingBidderIndex = roundStarterIndex;
+                        currentTurnIndex = roundStarterIndex;
                     } else {
                         moveToNextTurn();
                     }
@@ -395,7 +400,6 @@
             while (incompletePlayers.length === 1 && currentLotItem) {
                 const remainingWinner = incompletePlayers[0];
                 
-                // מילוי אוטומטי - שומר את הסיבוב כ-(0) כפי שביקשת
                 remainingWinner.roster.push({
                     round: 0,
                     text: `${currentLotItem.name} - ${currentLotItem.team} ($0)`
@@ -488,14 +492,12 @@
             }
         }
 
-        // כאן מתבצעת התצוגה של הפורמט החדש שביקשת
         function updateRosterList(id, arr) {
             const el = document.getElementById(id);
             el.innerHTML = '';
             for(let i = 1; i <= 5; i++) {
                 const item = arr[i-1];
                 if (item) {
-                    // מדפיס בפורמט: (סיבוב) מספר. שם השחקן
                     el.innerHTML += `<li>(${item.round}) ${i}. ${item.text}</li>`;
                 } else {
                     el.innerHTML += `<li>${i}. -</li>`;
