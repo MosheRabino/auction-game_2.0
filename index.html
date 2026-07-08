@@ -248,6 +248,14 @@
         let turnTimerDeadline = null;
         let turnTimerSignature = null;
 
+        // ---------- Auto-fill timer: 5s per step, auto-confirms the free player if nobody
+        // clicks in time - same deterministic-action reasoning as the bidding timer above, just
+        // a shorter window since there's no actual decision being made, only a confirmation.
+        const AUTO_FILL_TIME_LIMIT_MS = 5000;
+        let autoFillTimerHandle = null;
+        let autoFillTimerDeadline = null;
+        let autoFillTimerSignature = null;
+
         // ---------- Online mode state ----------
         // Loaded at boot from config.json (a separate file, kept out of index.html) so that
         // regenerating/updating this file never overwrites your actual project credentials.
@@ -1309,6 +1317,38 @@
             if (el) el.innerText = '';
         }
 
+        // Same pattern as the bidding timer, just a shorter 5s window and it confirms the
+        // auto-fill pick instead of passing - reuses confirmAutoFillPick's own force=true bypass
+        // so it works regardless of whose device actually fires it.
+        function ensureAutoFillTimer(signature) {
+            if (signature !== autoFillTimerSignature) {
+                autoFillTimerSignature = signature;
+                autoFillTimerDeadline = Date.now() + AUTO_FILL_TIME_LIMIT_MS;
+                if (autoFillTimerHandle) clearInterval(autoFillTimerHandle);
+                autoFillTimerHandle = setInterval(tickAutoFillTimer, 250);
+            }
+            tickAutoFillTimer();
+        }
+
+        function tickAutoFillTimer() {
+            const el = document.getElementById('turnTimerDisplay');
+            const remainingMs = autoFillTimerDeadline - Date.now();
+            const remainingSec = Math.max(0, Math.ceil(remainingMs / 1000));
+            if (el) el.innerText = `⏱ ${remainingSec} שניות להוספה אוטומטית`;
+
+            if (remainingMs <= 0) {
+                if (autoFillTimerHandle) { clearInterval(autoFillTimerHandle); autoFillTimerHandle = null; }
+                confirmAutoFillPick(true);
+            }
+        }
+
+        function clearAutoFillTimer() {
+            if (autoFillTimerHandle) { clearInterval(autoFillTimerHandle); autoFillTimerHandle = null; }
+            autoFillTimerSignature = null;
+            const el = document.getElementById('turnTimerDisplay');
+            if (el) el.innerText = '';
+        }
+
         function moveToNextTurn() {
             let loops = 0;
             do {
@@ -1369,6 +1409,7 @@
 
             if (allDone || (!currentLotItem && !autoFillState.active)) {
                 clearTurnTimer();
+                clearAutoFillTimer();
 
                 document.getElementById('gamePanel').classList.add('hidden');
                 document.getElementById('summaryPanel').classList.remove('hidden');
@@ -1513,7 +1554,7 @@
         }
 
         function renderAutoFillTurn() {
-            clearTurnTimer(); // the 30s clock only applies to competitive bidding turns, not auto-fill picks
+            clearTurnTimer(); // the 30s bidding clock doesn't apply here - the 5s auto-fill clock does
 
             const player = players.find(p => p.id === autoFillState.playerId);
 
@@ -1538,9 +1579,15 @@
             autoBtn.innerText = isMine ? "אישור, הבא ⏭️" : `ממתין ל-${player.name}...`;
 
             document.getElementById('hostSkipBtn').classList.toggle('hidden', !(isOnline && amIHost));
+
+            // A fresh 5s clock for every distinct auto-fill step - the signature changes every
+            // time a new lot comes up for this player, same idea as the bidding turn signature.
+            const autoFillSignature = `${player.id}|${currentLotItem.name}|${currentLotItem.team}`;
+            ensureAutoFillTimer(autoFillSignature);
         }
 
         function renderNormalTurn() {
+            clearAutoFillTimer(); // the 5s auto-fill clock doesn't apply here - the 30s bidding clock does
             document.getElementById('bidSliderContainer').classList.remove('hidden');
             document.getElementById('normalActionBtns').classList.remove('hidden');
             document.getElementById('autoFillActionBtn').classList.add('hidden');
