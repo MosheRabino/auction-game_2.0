@@ -705,7 +705,8 @@
             if (mySeatIndex !== null) {
                 iAmLeavingVoluntarily = true;
                 try {
-                    await sbClient.rpc('leave_seat', { p_room_code: roomCode, p_seat_index: mySeatIndex, p_uid: myUid });
+                    const { error } = await sbClient.rpc('leave_seat', { p_room_code: roomCode, p_seat_index: mySeatIndex, p_uid: myUid });
+                    if (error) console.error("שגיאה בעזיבת המקום", error);
                 } catch (err) {
                     console.error("שגיאה בעזיבת המקום", err);
                 }
@@ -726,9 +727,16 @@
             if (seatIdx === -1) return;
 
             try {
-                await sbClient.rpc('host_kick_seat', { p_room_code: roomCode, p_seat_index: seatIdx, p_host_uid: myUid });
+                const { data: kicked, error } = await sbClient.rpc('host_kick_seat', { p_room_code: roomCode, p_seat_index: seatIdx, p_host_uid: myUid });
+                if (error) {
+                    console.error("שגיאה בהוצאת שחקן", error);
+                    alert("לא הצלחנו להוציא את השחקן: " + error.message);
+                } else if (!kicked) {
+                    alert("לא הצלחנו להוציא את השחקן (ייתכן שהוא כבר לא בחדר).");
+                }
             } catch (err) {
                 console.error("שגיאה בהוצאת שחקן", err);
+                alert("שגיאה בהוצאת השחקן.");
             }
         }
 
@@ -1058,8 +1066,9 @@
                     return;
                 }
                 const seatedUids = ((currentLobby && currentLobby.seats) || []).filter(s => s && s.uid).map(s => s.uid);
-                const stillIn = players.filter(p => seatedUids.includes(p.uid));
-                const allReady = stillIn.length > 0 && stillIn.every(p => readyUids.includes(p.uid));
+                const hostUid = currentLobby && currentLobby.hostUid;
+                const stillIn = players.filter(p => seatedUids.includes(p.uid) && p.uid !== hostUid);
+                const allReady = stillIn.length === 0 || stillIn.every(p => readyUids.includes(p.uid));
                 if (!allReady) {
                     alert("עדיין לא כל השחקנים לחצו 'מוכן'.");
                     return;
@@ -1472,21 +1481,27 @@
         // only) a kick button per player - also drives whether "New Round" is enabled.
         function renderReadyCheckUI() {
             const container = document.getElementById('readyCheckContainer');
+            const hostUid = currentLobby && currentLobby.hostUid;
             const seatedUids = ((currentLobby && currentLobby.seats) || []).filter(s => s && s.uid).map(s => s.uid);
             const stillIn = players.filter(p => seatedUids.includes(p.uid));
-            const readyCount = stillIn.filter(p => readyUids.includes(p.uid)).length;
-            const allReady = stillIn.length > 0 && readyCount === stillIn.length;
+            // The host doesn't click "ready" themselves - they can start the next round as
+            // soon as everyone ELSE still seated is ready, so they're excluded from the count.
+            const needToBeReady = stillIn.filter(p => p.uid !== hostUid);
+            const readyCount = needToBeReady.filter(p => readyUids.includes(p.uid)).length;
+            const allReady = needToBeReady.length === 0 || readyCount === needToBeReady.length;
 
-            let html = `<div style="margin-bottom:10px; color:var(--muted-text); font-size:0.9rem;">מוכנים לסיבוב הבא: ${readyCount}/${stillIn.length}</div>`;
+            let html = `<div style="margin-bottom:10px; color:var(--muted-text); font-size:0.9rem;">מוכנים לסיבוב הבא: ${readyCount}/${needToBeReady.length}</div>`;
             stillIn.forEach(p => {
                 const isMe = p.uid === myUid;
-                const ready = readyUids.includes(p.uid);
+                const isHostPlayer = p.uid === hostUid;
+                const ready = isHostPlayer || readyUids.includes(p.uid);
                 const kickBtn = (amIHost && !isMe)
                     ? `<button onclick="hostKickPlayer('${p.uid}')" style="background:var(--danger-color); color:white; border:none; border-radius:4px; padding:4px 9px; font-size:0.8rem; cursor:pointer; margin-right:8px;">✕</button>`
                     : '';
+                const statusIcon = isHostPlayer ? '👑' : (ready ? '✅' : '⏳');
                 html += `<div class="team-item" style="justify-content:space-between; background:rgba(0,0,0,0.15); padding:8px 10px; border-radius:6px; margin-bottom:6px;">
                             <span>${escapeHtml(p.name)} ${isMe ? '(אתה)' : ''}</span>
-                            <span style="display:flex; align-items:center;">${ready ? '✅' : '⏳'} ${kickBtn}</span>
+                            <span style="display:flex; align-items:center;">${statusIcon} ${kickBtn}</span>
                          </div>`;
             });
             container.innerHTML = html;
@@ -1501,7 +1516,7 @@
             const newRoundBtn = document.getElementById('newRoundBtn');
             if (amIHost) {
                 newRoundBtn.disabled = !allReady;
-                newRoundBtn.innerText = allReady ? "סיבוב חדש 🔄" : `ממתין למוכנות (${readyCount}/${stillIn.length}) ⏳`;
+                newRoundBtn.innerText = allReady ? "סיבוב חדש 🔄" : `ממתין למוכנות (${readyCount}/${needToBeReady.length}) ⏳`;
             }
         }
 
@@ -1515,9 +1530,14 @@
             document.getElementById('readyBtn').disabled = true;
             document.getElementById('readyBtn').innerText = "ממתין לשאר השחקנים... ⏳";
             try {
-                await sbClient.rpc('mark_ready', { p_room_code: roomCode, p_uid: myUid });
+                const { error } = await sbClient.rpc('mark_ready', { p_room_code: roomCode, p_uid: myUid });
+                if (error) {
+                    console.error("שגיאה בסימון מוכנות", error);
+                    alert("לא הצלחנו לסמן אותך כמוכן: " + error.message);
+                }
             } catch (err) {
                 console.error("שגיאה בסימון מוכנות", err);
+                alert("שגיאה בסימון מוכנות.");
             }
         }
 
@@ -1716,7 +1736,9 @@
 
                     if (navigator.canShare && navigator.canShare({ files: [file] })) {
                         await navigator.share({
-                            files: [file]
+                            files: [file],
+                            title: 'תוצאות מכירה פומבית',
+                            text: 'קבלו את תוצאות המכירה הפומבית של הליגה!'
                         });
                     } else {
                         const link = document.createElement('a');
