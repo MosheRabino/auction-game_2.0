@@ -1051,10 +1051,15 @@
         }
 
         function playerColumnHtml(p) {
+            // In online mode, only your own seat's color dot is shown by default - everyone
+            // else's stays neutral until it's their turn (the arena/column highlight reveals
+            // it then), and reverts to true colors for everyone once the game ends.
+            const revealColor = !isOnline || mySeatIndex === p.id;
+            const dotColor = revealColor ? p.color.border : 'rgba(255,255,255,0.2)';
             return `
                 <div class="player-column" id="playerCol_${p.id}">
                     <span style="font-weight:bold; font-size:1.05rem; display: flex; align-items: center; gap: 6px;">
-                        <span style="width: 10px; height: 10px; background-color: ${p.color.border}; border-radius: 50%; display: inline-block;"></span>
+                        <span id="playerDot_${p.id}" style="width: 10px; height: 10px; background-color: ${dotColor}; border-radius: 50%; display: inline-block;"></span>
                         ${escapeHtml(p.name)}
                     </span>
                     <span class="budget" id="playerMoney_${p.id}">$${p.money}</span>
@@ -1228,6 +1233,8 @@
                 players.forEach(p => {
                     document.getElementById(`playerMoney_${p.id}`).innerText = `$${p.money}`;
                     updateRosterList(`playerRoster_${p.id}`, p.roster);
+                    const dot = document.getElementById(`playerDot_${p.id}`);
+                    if (dot) dot.style.backgroundColor = p.color.border;
                 });
 
                 document.querySelectorAll('.player-column').forEach(el => {
@@ -1281,6 +1288,12 @@
                 if (pid === playerId) {
                     col.style.borderColor = color.border;
                     col.style.backgroundColor = color.bg;
+                } else if (isOnline && mySeatIndex === pid) {
+                    // your own seat: always a visible marker, even off-turn - just not the
+                    // full "active" fill, so it's clearly distinct from whoever's turn it is
+                    const mine = players.find(p => p.id === pid);
+                    col.style.borderColor = mine ? mine.color.border : 'transparent';
+                    col.style.backgroundColor = 'rgba(255,255,255,0.02)';
                 } else {
                     col.style.borderColor = 'transparent';
                     col.style.backgroundColor = 'rgba(255,255,255,0.02)';
