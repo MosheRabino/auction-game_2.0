@@ -74,7 +74,6 @@
             <h2>איך רוצים לשחק?</h2>
             <button class="btn" onclick="chooseLocalMode()">📱 מקומי (מעבירים מכשיר אחד)</button>
             <button class="btn" style="background-color:#00b894;" onclick="chooseOnlineMode()">🌐 מקוון (כל אחד מהמכשיר שלו)</button>
-            <button class="btn hidden" id="rejoinLastRoomBtn"></button>
         </div>
 
         <div class="panel hidden" id="onlineChoicePanel">
@@ -333,13 +332,6 @@
             if (isSupabaseConfigured()) {
                 ensureSupabaseAuth().catch(() => {}); // warm up in the background; errors surface later if actually needed
             }
-            const lastRoom = localStorage.getItem(LS_LAST_ROOM);
-            if (lastRoom) {
-                const btn = document.getElementById('rejoinLastRoomBtn');
-                btn.classList.remove('hidden');
-                btn.innerText = `חזרה לחדר האחרון (${lastRoom}) 🔄`;
-                btn.onclick = () => rejoinLastRoom(lastRoom);
-            }
         };
 
         async function shareRoomLink() {
@@ -451,11 +443,6 @@
             const code = document.getElementById('joinRoomCodeInput').value.trim().toUpperCase();
             if (!code) { alert("צריך להזין קוד חדר."); return; }
             attemptJoinRoom(code);
-        }
-
-        async function rejoinLastRoom(code) {
-            document.getElementById('modeSelectPanel').classList.add('hidden');
-            await attemptJoinRoom(code);
         }
 
         async function attemptJoinRoom(code) {
@@ -1729,9 +1716,7 @@
 
                     if (navigator.canShare && navigator.canShare({ files: [file] })) {
                         await navigator.share({
-                            files: [file],
-                            title: 'תוצאות מכירה פומבית',
-                            text: 'קבלו את תוצאות המכירה הפומבית של הליגה!'
+                            files: [file]
                         });
                     } else {
                         const link = document.createElement('a');
