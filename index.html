@@ -559,8 +559,11 @@
             const { data } = await sbClient.from('rooms').select('lobby, state').eq('room_code', roomCode).maybeSingle();
             if (data) {
                 currentLobby = data.lobby || currentLobby;
-                if (data.state) { applyRemoteState(data.state); return; }
-                if (data.lobby) renderRoomLobbySeats(data.lobby, isHost);
+                if (data.state) {
+                    applyRemoteState(data.state);
+                } else if (data.lobby) {
+                    renderRoomLobbySeats(data.lobby, isHost);
+                }
             }
 
             roomChannel = sbClient
