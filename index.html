@@ -102,7 +102,7 @@
             </div>
             <div id="roomSeatsContainer" style="display:flex; flex-direction:column; gap:10px; margin-bottom:15px;"></div>
             <button class="btn hidden" id="hostStartBtn" onclick="hostStartOnlineGame()">התחל משחק 🚀</button>
-            <button class="btn" onclick="if(confirm('לעזוב את הלובי?')) location.reload();">⬅ עזוב</button>
+            <button class="btn" onclick="leaveLobby()">⬅ עזוב</button>
         </div>
 
         <div class="panel hidden" id="setupPanel">
@@ -168,6 +168,7 @@
                 </div>
 
                 <button class="btn btn-continue hidden" id="autoFillActionBtn" onclick="confirmAutoFillPick()">אישור, הבא ⏭️</button>
+                <button class="btn hidden" id="hostSkipBtn" onclick="hostForceSkip()" style="background-color:#7f8c8d; color:white;">⏭️ דלג על התור (מארח)</button>
             </div>
 
             <div class="teams-dashboard" id="screenshotArea"></div>
@@ -180,6 +181,10 @@
             <div id="finalTeamsContainer" style="margin-bottom: 25px; margin-top: 20px;"></div>
 
             <button class="btn" id="shareBtn" onclick="shareScreenshot()" style="background-color: var(--success-color); color: black;">📸 שתף צילום מסך</button>
+
+            <div id="readyCheckContainer" class="hidden" style="text-align:right; margin-bottom:15px;"></div>
+            <button class="btn hidden" id="readyBtn" onclick="markMyselfReady()" style="background-color: var(--success-color); color: black;">מוכן לסיבוב הבא ✅</button>
+
             <button class="btn" id="newRoundBtn" onclick="startNewRound()">סיבוב חדש 🔄</button>
             <div id="waitingForHostNote" class="hidden" style="color: var(--muted-text); font-size: 0.9rem; margin-bottom: 10px;">ממתינים למארח שיתחיל סיבוב חדש...</div>
             <button class="btn" onclick="leaveToMainMenu()">🏠 יציאה לתפריט הראשי</button>
@@ -269,6 +274,16 @@
         let amIHost = false;
         let sbClient = null;
         let roomChannel = null;
+
+        // Kept up to date from every realtime payload (lobby column) so ready-check/kick UI
+        // and "was I kicked?" detection always have a fresh view of who's actually still seated,
+        // even after the game has started and the lobby screen itself is long gone.
+        let currentLobby = null;
+        // uids who've clicked "ready" for the next round (part of shared state, reset each round)
+        let readyUids = [];
+        // set right before I voluntarily clear my own seat, so my own realtime echo of that
+        // change doesn't make my own client think the HOST kicked me
+        let iAmLeavingVoluntarily = false;
 
         function isSupabaseConfigured() {
             return !!SUPABASE_CONFIG.url && !!SUPABASE_CONFIG.anonKey &&
@@ -445,11 +460,23 @@
                 return;
             }
 
+            // The room locks the moment a game has started, for its entire lifetime (including
+            // future "New Round"s) - the only way back in is if you were already part of that
+            // game (a genuine reconnect, e.g. after a refresh), matched by uid.
+            if (data.state) {
+                const alreadyIn = (data.state.players || []).some(p => p.uid === myUid);
+                if (!alreadyIn) {
+                    alert("המשחק בחדר הזה כבר התחיל - החדר נעול ואי אפשר להצטרף אליו.");
+                    return;
+                }
+            }
+
             roomCode = code;
             localStorage.setItem(LS_LAST_ROOM, roomCode);
             document.getElementById('joinRoomPanel').classList.add('hidden');
 
             const lobby = data.lobby;
+            currentLobby = lobby;
             const existingSeatIndex = (lobby.seats || []).findIndex(s => s && s.uid === myUid);
             mySeatIndex = existingSeatIndex >= 0 ? existingSeatIndex : null;
             amIHost = lobby.hostUid === myUid;
@@ -536,6 +563,7 @@
 
             const { data } = await sbClient.from('rooms').select('lobby, state').eq('room_code', roomCode).maybeSingle();
             if (data) {
+                currentLobby = data.lobby || currentLobby;
                 if (data.state) { applyRemoteState(data.state); return; }
                 if (data.lobby) renderRoomLobbySeats(data.lobby, isHost);
             }
@@ -543,8 +571,23 @@
             roomChannel = sbClient
                 .channel(`room-${roomCode}`)
                 .on('postgres_changes', { event: '*', schema: 'public', table: 'rooms', filter: `room_code=eq.${roomCode}` }, (payload) => {
+                    if (payload.eventType === 'DELETE') {
+                        handleRoomClosedByHost();
+                        return;
+                    }
                     const row = payload.new;
                     if (!row) return;
+
+                    currentLobby = row.lobby || currentLobby;
+
+                    // If my uid no longer appears anywhere in the seats, someone (the host)
+                    // cleared my seat out from under me - unless I'm the one who just left
+                    // voluntarily, in which case this is just my own change echoing back.
+                    if (!iAmLeavingVoluntarily && !amIHost && mySeatIndex !== null && row.lobby && row.lobby.seats) {
+                        const stillSeated = row.lobby.seats.some(s => s && s.uid === myUid);
+                        if (!stillSeated) { handleKickedByHost(); return; }
+                    }
+
                     if (row.state) {
                         document.getElementById('roomLobbyPanel').classList.add('hidden');
                         applyRemoteState(row.state);
@@ -555,16 +598,46 @@
                 .subscribe();
         }
 
+        function handleRoomClosedByHost() {
+            if (roomChannel) { sbClient.removeChannel(roomChannel); roomChannel = null; }
+            localStorage.removeItem(LS_LAST_ROOM);
+            alert("המארח עזב את החדר - המשחק הסתיים.");
+            location.reload();
+        }
+
+        function handleKickedByHost() {
+            if (roomChannel) { sbClient.removeChannel(roomChannel); roomChannel = null; }
+            localStorage.removeItem(LS_LAST_ROOM);
+            alert("המארח הוציא אותך מהחדר.");
+            location.reload();
+        }
+
+        // Host closing the room entirely - used whenever the host leaves, from any screen.
+        async function closeRoomAsHost() {
+            try {
+                await sbClient.from('rooms').delete().eq('room_code', roomCode);
+            } catch (err) {
+                console.error("שגיאה בסגירת החדר", err);
+            }
+            if (roomChannel) { sbClient.removeChannel(roomChannel); roomChannel = null; }
+            localStorage.removeItem(LS_LAST_ROOM);
+            location.reload();
+        }
+
         function renderRoomLobbySeats(lobby, isHost) {
+            currentLobby = lobby;
             const seats = lobby.seats || [];
             const container = document.getElementById('roomSeatsContainer');
             const claimedSeats = seats.filter(s => s && s.uid);
 
             let html = claimedSeats.map(seat => {
                 const isMe = seat.uid === myUid;
+                const kickBtn = (isHost && !isMe)
+                    ? `<button onclick="hostKickPlayer('${seat.uid}')" style="background:var(--danger-color); color:white; border:none; border-radius:4px; padding:4px 9px; font-size:0.8rem; cursor:pointer;">✕</button>`
+                    : '';
                 return `<div class="team-item" style="justify-content:space-between; background:rgba(0,0,0,0.15); padding:10px; border-radius:6px;">
                             <span>${escapeHtml(seat.name)} ${isMe ? '(אתה)' : ''}</span>
-                            <span>✅</span>
+                            <span style="display:flex; align-items:center; gap:8px;">✅ ${kickBtn}</span>
                         </div>`;
             }).join('');
 
@@ -621,6 +694,49 @@
             alert("לא הצלחנו למצוא מקום פנוי כרגע, נסו שוב.");
         }
 
+        // Leaving the lobby BEFORE a game has started: the host closes the whole room (nobody
+        // else can be left waiting in a dead lobby); anyone else just frees their own seat via
+        // an atomic RPC (safe against a concurrent joinOpenSeat - see leave_seat in the SQL
+        // setup: it only clears a seat if it's still yours, exactly mirroring claim_seat's
+        // "only if still empty" guarantee, so the two can never step on each other).
+        async function leaveLobby() {
+            if (!confirm('לעזוב את הלובי?')) return;
+
+            if (amIHost) {
+                await closeRoomAsHost();
+                return;
+            }
+
+            if (mySeatIndex !== null) {
+                iAmLeavingVoluntarily = true;
+                try {
+                    await sbClient.rpc('leave_seat', { p_room_code: roomCode, p_seat_index: mySeatIndex, p_uid: myUid });
+                } catch (err) {
+                    console.error("שגיאה בעזיבת המקום", err);
+                }
+            }
+            localStorage.removeItem(LS_LAST_ROOM);
+            location.reload();
+        }
+
+        // Host-only: remove someone else's seat, whether that's during the lobby (before the
+        // game starts) or during the post-game ready-check (before the next round starts).
+        // Uses the same atomic host_kick_seat RPC either way - it only touches lobby.seats,
+        // which is exactly what the next "New Round"/game start reads from.
+        async function hostKickPlayer(uid) {
+            if (!amIHost) return;
+            if (!confirm("להוציא את השחקן הזה מהחדר?")) return;
+
+            const seatIdx = ((currentLobby && currentLobby.seats) || []).findIndex(s => s && s.uid === uid);
+            if (seatIdx === -1) return;
+
+            try {
+                await sbClient.rpc('host_kick_seat', { p_room_code: roomCode, p_seat_index: seatIdx, p_host_uid: myUid });
+            } catch (err) {
+                console.error("שגיאה בהוצאת שחקן", err);
+            }
+        }
+
         async function hostStartOnlineGame() {
             const { data } = await sbClient.from('rooms').select('lobby').eq('room_code', roomCode).maybeSingle();
             const lobby = data && data.lobby;
@@ -662,11 +778,14 @@
             shuffleArray(filteredPlayers);
             currentLotItem = filteredPlayers.shift();
             gameState = { currentBid: 1, isInitial: true };
-            roundStarterIndex = 0;
-            currentTurnIndex = 0;
-            leadingBidderIndex = 0;
+            // A random starting player every game/round, not always seat 0.
+            const startIndex = Math.floor(Math.random() * players.length);
+            roundStarterIndex = startIndex;
+            currentTurnIndex = startIndex;
+            leadingBidderIndex = startIndex;
             currentRoundCounter = 1;
             autoFillState = { active: false, playerId: null };
+            readyUids = []; // nobody's "ready for next round" yet - this IS the next round starting
 
             const leagueNames = (lobby.leagueSlots || []).filter(s => s.file).map(s => getLeagueDisplayName(s.file));
             const title = `🏀 ${leagueNames.join(' + ')}`;
@@ -679,6 +798,7 @@
             return {
                 settings, players, currentTurnIndex, leadingBidderIndex, roundStarterIndex,
                 currentLotItem, currentRoundCounter, filteredPlayers, gameState, autoFillState,
+                readyUids,
                 mainTitle: titleOverride || document.getElementById('mainTitle').innerText
             };
         }
@@ -701,6 +821,7 @@
             filteredPlayers = remoteState.filteredPlayers || [];
             gameState = remoteState.gameState || { currentBid: 1, isInitial: true };
             autoFillState = remoteState.autoFillState || { active: false, playerId: null };
+            readyUids = remoteState.readyUids || [];
 
             document.getElementById('mainTitle').innerText = remoteState.mainTitle || document.getElementById('mainTitle').innerText;
 
@@ -911,12 +1032,20 @@
         // ---------- Navigation ----------
         function resetToHome() {
             if (confirm("האם אתה בטוח שברצונך לעזוב את המשחק הנוכחי ולחזור למסך הראשי?")) {
+                if (isOnline && amIHost) {
+                    closeRoomAsHost();
+                    return;
+                }
                 if (!isOnline) localStorage.removeItem(LS_GAME);
                 location.reload();
             }
         }
 
         function leaveToMainMenu() {
+            if (isOnline && amIHost) {
+                closeRoomAsHost();
+                return;
+            }
             if (!isOnline) localStorage.removeItem(LS_GAME);
             localStorage.removeItem(LS_LAST_ROOM);
             location.reload();
@@ -931,6 +1060,13 @@
             if (isOnline) {
                 if (!amIHost) {
                     alert("רק המארח יכול להתחיל סיבוב חדש.");
+                    return;
+                }
+                const seatedUids = ((currentLobby && currentLobby.seats) || []).filter(s => s && s.uid).map(s => s.uid);
+                const stillIn = players.filter(p => seatedUids.includes(p.uid));
+                const allReady = stillIn.length > 0 && stillIn.every(p => readyUids.includes(p.uid));
+                if (!allReady) {
+                    alert("עדיין לא כל השחקנים לחצו 'מוכן'.");
                     return;
                 }
                 hostStartOnlineGame();
@@ -967,9 +1103,9 @@
             currentRoundCounter = 1;
             currentLotItem = filteredPlayers.shift();
             gameState = { currentBid: 1, isInitial: true };
-            roundStarterIndex = 0;
-            currentTurnIndex = 0;
-            leadingBidderIndex = 0;
+            roundStarterIndex = Math.floor(Math.random() * players.length);
+            currentTurnIndex = roundStarterIndex;
+            leadingBidderIndex = roundStarterIndex;
             autoFillState = { active: false, playerId: null };
 
             const dashboard = document.getElementById('screenshotArea');
@@ -1036,7 +1172,7 @@
 
             gameState.currentBid = 1;
             gameState.isInitial = true;
-            roundStarterIndex = 0;
+            roundStarterIndex = Math.floor(Math.random() * players.length);
             currentTurnIndex = roundStarterIndex;
             leadingBidderIndex = roundStarterIndex;
             autoFillState = { active: false, playerId: null };
@@ -1197,8 +1333,8 @@
             return false;
         }
 
-        function confirmAutoFillPick() {
-            if (isOnline && mySeatIndex !== autoFillState.playerId) return;
+        function confirmAutoFillPick(force = false) {
+            if (isOnline && !force && mySeatIndex !== autoFillState.playerId) return;
 
             const player = players.find(p => p.id === autoFillState.playerId);
             player.roster.push({
@@ -1213,6 +1349,18 @@
 
             persistState();
             renderUI();
+        }
+
+        // The host can force a stuck turn to advance at any time - reuses the exact same
+        // deterministic paths the 30s timeout already uses, so it's safe regardless of who
+        // triggers it and never conflicts with the normal turn-gating for everyone else.
+        function hostForceSkip() {
+            if (!isOnline || !amIHost) return;
+            if (autoFillState.active) {
+                confirmAutoFillPick(true);
+            } else {
+                handleAction('pass', true);
+            }
         }
 
         // ---------- Rendering ----------
@@ -1252,12 +1400,27 @@
 
                 const newRoundBtn = document.getElementById('newRoundBtn');
                 const waitingNote = document.getElementById('waitingForHostNote');
-                if (isOnline && !amIHost) {
-                    newRoundBtn.classList.add('hidden');
-                    waitingNote.classList.remove('hidden');
-                } else {
-                    newRoundBtn.classList.remove('hidden');
+                const readyCheckContainer = document.getElementById('readyCheckContainer');
+                const readyBtn = document.getElementById('readyBtn');
+
+                if (isOnline) {
+                    // Ready-check replaces the old static "waiting for host" note - everyone can
+                    // see exactly who's still not ready, and the host can start once everyone is.
                     waitingNote.classList.add('hidden');
+                    readyCheckContainer.classList.remove('hidden');
+                    if (amIHost) {
+                        newRoundBtn.classList.remove('hidden');
+                        readyBtn.classList.add('hidden');
+                    } else {
+                        newRoundBtn.classList.add('hidden');
+                        readyBtn.classList.remove('hidden');
+                    }
+                    renderReadyCheckUI();
+                } else {
+                    readyCheckContainer.classList.add('hidden');
+                    readyBtn.classList.add('hidden');
+                    waitingNote.classList.add('hidden');
+                    newRoundBtn.classList.remove('hidden');
                 }
                 return;
             }
@@ -1274,6 +1437,59 @@
                 renderAutoFillTurn();
             } else {
                 renderNormalTurn();
+            }
+        }
+
+        // Shows who's still seated for next round, who's already clicked "ready", and (host
+        // only) a kick button per player - also drives whether "New Round" is enabled.
+        function renderReadyCheckUI() {
+            const container = document.getElementById('readyCheckContainer');
+            const seatedUids = ((currentLobby && currentLobby.seats) || []).filter(s => s && s.uid).map(s => s.uid);
+            const stillIn = players.filter(p => seatedUids.includes(p.uid));
+            const readyCount = stillIn.filter(p => readyUids.includes(p.uid)).length;
+            const allReady = stillIn.length > 0 && readyCount === stillIn.length;
+
+            let html = `<div style="margin-bottom:10px; color:var(--muted-text); font-size:0.9rem;">מוכנים לסיבוב הבא: ${readyCount}/${stillIn.length}</div>`;
+            stillIn.forEach(p => {
+                const isMe = p.uid === myUid;
+                const ready = readyUids.includes(p.uid);
+                const kickBtn = (amIHost && !isMe)
+                    ? `<button onclick="hostKickPlayer('${p.uid}')" style="background:var(--danger-color); color:white; border:none; border-radius:4px; padding:4px 9px; font-size:0.8rem; cursor:pointer; margin-right:8px;">✕</button>`
+                    : '';
+                html += `<div class="team-item" style="justify-content:space-between; background:rgba(0,0,0,0.15); padding:8px 10px; border-radius:6px; margin-bottom:6px;">
+                            <span>${escapeHtml(p.name)} ${isMe ? '(אתה)' : ''}</span>
+                            <span style="display:flex; align-items:center;">${ready ? '✅' : '⏳'} ${kickBtn}</span>
+                         </div>`;
+            });
+            container.innerHTML = html;
+
+            const readyBtn = document.getElementById('readyBtn');
+            if (!amIHost) {
+                const myReady = readyUids.includes(myUid);
+                readyBtn.disabled = myReady;
+                readyBtn.innerText = myReady ? "ממתין לשאר השחקנים... ⏳" : "מוכן לסיבוב הבא ✅";
+            }
+
+            const newRoundBtn = document.getElementById('newRoundBtn');
+            if (amIHost) {
+                newRoundBtn.disabled = !allReady;
+                newRoundBtn.innerText = allReady ? "סיבוב חדש 🔄" : `ממתין למוכנות (${readyCount}/${stillIn.length}) ⏳`;
+            }
+        }
+
+        // Optimistic local update for instant feedback, then the atomic RPC makes it official -
+        // uses jsonb array-append guarded by "not already there", so simultaneous ready-clicks
+        // from different players can never lose each other's entries.
+        async function markMyselfReady() {
+            if (!isOnline || amIHost) return;
+            if (!readyUids.includes(myUid)) readyUids.push(myUid);
+            renderReadyCheckUI();
+            document.getElementById('readyBtn').disabled = true;
+            document.getElementById('readyBtn').innerText = "ממתין לשאר השחקנים... ⏳";
+            try {
+                await sbClient.rpc('mark_ready', { p_room_code: roomCode, p_uid: myUid });
+            } catch (err) {
+                console.error("שגיאה בסימון מוכנות", err);
             }
         }
 
@@ -1320,12 +1536,15 @@
             const isMine = !isOnline || mySeatIndex === player.id;
             autoBtn.disabled = !isMine;
             autoBtn.innerText = isMine ? "אישור, הבא ⏭️" : `ממתין ל-${player.name}...`;
+
+            document.getElementById('hostSkipBtn').classList.toggle('hidden', !(isOnline && amIHost));
         }
 
         function renderNormalTurn() {
             document.getElementById('bidSliderContainer').classList.remove('hidden');
             document.getElementById('normalActionBtns').classList.remove('hidden');
             document.getElementById('autoFillActionBtn').classList.add('hidden');
+            document.getElementById('hostSkipBtn').classList.toggle('hidden', !(isOnline && amIHost));
 
             const currentPlayer = players[currentTurnIndex];
 
