@@ -291,6 +291,10 @@
         // set right before I voluntarily clear my own seat, so my own realtime echo of that
         // change doesn't make my own client think the HOST kicked me
         let iAmLeavingVoluntarily = false;
+        // Safety-net poller for the post-game ready-check screen (kicks/ready clicks) - backs
+        // up the realtime subscription in case it's slow or not delivering, since this screen
+        // has repeatedly been reported as going stale.
+        let readyCheckPollInterval = null;
 
         function isSupabaseConfigured() {
             return !!SUPABASE_CONFIG.url && !!SUPABASE_CONFIG.anonKey &&
@@ -597,6 +601,7 @@
         }
 
         function handleRoomClosedByHost() {
+            clearReadyCheckPoll();
             if (roomChannel) { sbClient.removeChannel(roomChannel); roomChannel = null; }
             localStorage.removeItem(LS_LAST_ROOM);
             alert("המארח עזב את החדר - המשחק הסתיים.");
@@ -604,6 +609,7 @@
         }
 
         function handleKickedByHost() {
+            clearReadyCheckPoll();
             if (roomChannel) { sbClient.removeChannel(roomChannel); roomChannel = null; }
             localStorage.removeItem(LS_LAST_ROOM);
             alert("המארח הוציא אותך מהחדר.");
@@ -612,6 +618,7 @@
 
         // Host closing the room entirely - used whenever the host leaves, from any screen.
         async function closeRoomAsHost() {
+            clearReadyCheckPoll();
             try {
                 await sbClient.from('rooms').delete().eq('room_code', roomCode);
             } catch (err) {
@@ -727,19 +734,43 @@
             if (!confirm("להוציא את השחקן הזה מהחדר?")) return;
 
             const seatIdx = ((currentLobby && currentLobby.seats) || []).findIndex(s => s && s.uid === uid);
-            if (seatIdx === -1) return;
+            if (seatIdx === -1) {
+                alert("לא מצאתי את השחקן הזה ברשימת המקומות - נסה לרענן את הדף ולנסות שוב.");
+                return;
+            }
 
             try {
                 const { data: kicked, error } = await sbClient.rpc('host_kick_seat', { p_room_code: roomCode, p_seat_index: seatIdx, p_host_uid: myUid });
                 if (error) {
                     console.error("שגיאה בהוצאת שחקן", error);
                     alert("לא הצלחנו להוציא את השחקן: " + error.message);
-                } else if (!kicked) {
-                    alert("לא הצלחנו להוציא את השחקן (ייתכן שהוא כבר לא בחדר).");
+                    return;
+                }
+                if (!kicked) {
+                    alert("לא הצלחנו להוציא את השחקן - ייתכן שהרשאת המארח לא תואמת. נסה לרענן את הדף ולנסות שוב.");
+                    return;
                 }
             } catch (err) {
                 console.error("שגיאה בהוצאת שחקן", err);
                 alert("שגיאה בהוצאת השחקן.");
+                return;
+            }
+
+            // Re-fetch the authoritative lobby from the DB rather than trusting our own
+            // optimistic guess or waiting on the realtime round-trip - this guarantees the
+            // host's own screen reflects the kick immediately and correctly even if realtime
+            // is slow, or the change wasn't quite what we assumed locally.
+            try {
+                const { data } = await sbClient.from('rooms').select('lobby').eq('room_code', roomCode).maybeSingle();
+                if (data && data.lobby) currentLobby = data.lobby;
+            } catch (err) {
+                console.error("שגיאה ברענון החדר אחרי הוצאת שחקן", err);
+            }
+
+            if (!document.getElementById('roomLobbyPanel').classList.contains('hidden')) {
+                renderRoomLobbySeats(currentLobby, true);
+            } else if (!document.getElementById('summaryPanel').classList.contains('hidden')) {
+                renderReadyCheckUI();
             }
         }
 
@@ -1456,6 +1487,7 @@
                         readyBtn.classList.remove('hidden');
                     }
                     renderReadyCheckUI();
+                    ensureReadyCheckPoll();
                 } else {
                     readyCheckContainer.classList.add('hidden');
                     readyBtn.classList.add('hidden');
@@ -1465,6 +1497,7 @@
                 return;
             }
 
+            clearReadyCheckPoll();
             document.getElementById('gamePanel').classList.remove('hidden');
             document.getElementById('summaryPanel').classList.add('hidden');
 
@@ -1501,9 +1534,10 @@
                 const kickBtn = (amIHost && !isMe)
                     ? `<button onclick="hostKickPlayer('${p.uid}')" style="background:var(--danger-color); color:white; border:none; border-radius:4px; padding:4px 9px; font-size:0.8rem; cursor:pointer; margin-right:8px;">✕</button>`
                     : '';
-                const statusIcon = isHostPlayer ? '👑' : (ready ? '✅' : '⏳');
+                const statusIcon = isHostPlayer ? '' : (ready ? '✅' : '⏳');
+                const hostTag = isHostPlayer ? `<span style="color:var(--muted-text); font-size:0.8rem;">(מארח)</span>` : '';
                 html += `<div class="team-item" style="justify-content:space-between; background:rgba(0,0,0,0.15); padding:8px 10px; border-radius:6px; margin-bottom:6px;">
-                            <span>${escapeHtml(p.name)} ${isMe ? '(אתה)' : ''}</span>
+                            <span>${escapeHtml(p.name)} ${isMe ? '(אתה)' : ''} ${hostTag}</span>
                             <span style="display:flex; align-items:center;">${statusIcon} ${kickBtn}</span>
                          </div>`;
             });
@@ -1521,6 +1555,34 @@
                 newRoundBtn.disabled = !allReady;
                 newRoundBtn.innerText = allReady ? "סיבוב חדש 🔄" : `ממתין למוכנות (${readyCount}/${needToBeReady.length}) ⏳`;
             }
+        }
+
+        // Safety-net poll while the ready-check screen is up: re-fetches lobby+state directly
+        // every few seconds and re-renders, so kicks/ready-clicks show up even if a realtime
+        // event is slow or never arrives. Also catches "was I kicked?" for the polling client.
+        function ensureReadyCheckPoll() {
+            if (!isOnline || readyCheckPollInterval) return;
+            readyCheckPollInterval = setInterval(async () => {
+                try {
+                    const { data } = await sbClient.from('rooms').select('lobby, state').eq('room_code', roomCode).maybeSingle();
+                    if (!data) return;
+                    if (data.lobby) currentLobby = data.lobby;
+
+                    if (!amIHost && mySeatIndex !== null && !iAmLeavingVoluntarily && currentLobby && currentLobby.seats) {
+                        const stillSeated = currentLobby.seats.some(s => s && s.uid === myUid);
+                        if (!stillSeated) { handleKickedByHost(); return; }
+                    }
+
+                    if (data.state) readyUids = data.state.readyUids || readyUids;
+                    renderReadyCheckUI();
+                } catch (err) {
+                    console.error("שגיאה בבדיקת מצב מוכנות", err);
+                }
+            }, 3000);
+        }
+
+        function clearReadyCheckPoll() {
+            if (readyCheckPollInterval) { clearInterval(readyCheckPollInterval); readyCheckPollInterval = null; }
         }
 
         // Optimistic local update for instant feedback, then the atomic RPC makes it official -
