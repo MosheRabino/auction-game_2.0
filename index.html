@@ -1289,11 +1289,10 @@
                     col.style.borderColor = color.border;
                     col.style.backgroundColor = color.bg;
                 } else if (isOnline && mySeatIndex === pid) {
-                    // your own seat: always a visible marker, even off-turn - just not the
-                    // full "active" fill, so it's clearly distinct from whoever's turn it is
+                    // your own seat: always the full color fill, even off-turn
                     const mine = players.find(p => p.id === pid);
                     col.style.borderColor = mine ? mine.color.border : 'transparent';
-                    col.style.backgroundColor = 'rgba(255,255,255,0.02)';
+                    col.style.backgroundColor = mine ? mine.color.bg : 'rgba(255,255,255,0.02)';
                 } else {
                     col.style.borderColor = 'transparent';
                     col.style.backgroundColor = 'rgba(255,255,255,0.02)';
@@ -1469,8 +1468,6 @@
                     if (navigator.canShare && navigator.canShare({ files: [file] })) {
                         await navigator.share({
                             files: [file],
-                            title: 'תוצאות מכירה פומבית',
-                            text: 'קבלו את תוצאות המכירה הפומבית של הליגה!'
                         });
                     } else {
                         const link = document.createElement('a');
