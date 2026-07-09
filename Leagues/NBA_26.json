@@ -1,0 +1,941 @@
+[
+    {
+        "league": "NBA 26"
+    },
+    {
+        "team": "PHI",
+        "name": "Tyrese Maxey"
+    },
+    {
+        "team": "HOU",
+        "name": "Amen Thompson"
+    },
+    {
+        "team": "HOU",
+        "name": "Kevin Durant"
+    },
+    {
+        "team": "LAL",
+        "name": "Luka Dončić"
+    },
+    {
+        "team": "NOP",
+        "name": "Trey Murphy III"
+    },
+    {
+        "team": "DEN",
+        "name": "Jamal Murray"
+    },
+    {
+        "team": "ATL",
+        "name": "Jalen Johnson"
+    },
+    {
+        "team": "HOU",
+        "name": "Jabari Smith Jr."
+    },
+    {
+        "team": "MIN",
+        "name": "Anthony Edwards"
+    },
+    {
+        "team": "NYK",
+        "name": "Jalen Brunson"
+    },
+    {
+        "team": "PHI",
+        "name": "VJ Edgecombe"
+    },
+    {
+        "team": "DEN",
+        "name": "Nikola Jokić"
+    },
+    {
+        "team": "2TM",
+        "name": "James Harden"
+    },
+    {
+        "team": "ORL",
+        "name": "Paolo Banchero"
+    },
+    {
+        "team": "BOS",
+        "name": "Jaylen Brown"
+    },
+    {
+        "team": "BOS",
+        "name": "Derrick White"
+    },
+    {
+        "team": "DET",
+        "name": "Cade Cunningham"
+    },
+    {
+        "team": "TOR",
+        "name": "Brandon Ingram"
+    },
+    {
+        "team": "ORL",
+        "name": "Desmond Bane"
+    },
+    {
+        "team": "PHO",
+        "name": "Devin Booker"
+    },
+    {
+        "team": "TOR",
+        "name": "Scottie Barnes"
+    },
+    {
+        "team": "DAL",
+        "name": "Cooper Flagg"
+    },
+    {
+        "team": "CLE",
+        "name": "Donovan Mitchell"
+    },
+    {
+        "team": "ATL",
+        "name": "Nickeil Alexander-Walker"
+    },
+    {
+        "team": "POR",
+        "name": "Deni Avdija"
+    },
+    {
+        "team": "HOU",
+        "name": "Alperen Şengün"
+    },
+    {
+        "team": "POR",
+        "name": "Toumani Camara"
+    },
+    {
+        "team": "OKC",
+        "name": "Shai Gilgeous-Alexander"
+    },
+    {
+        "team": "NYK",
+        "name": "OG Anunoby"
+    },
+    {
+        "team": "IND",
+        "name": "Pascal Siakam"
+    },
+    {
+        "team": "ATL",
+        "name": "Dyson Daniels"
+    },
+    {
+        "team": "LAL",
+        "name": "LeBron James"
+    },
+    {
+        "team": "MIN",
+        "name": "Julius Randle"
+    },
+    {
+        "team": "NYK",
+        "name": "Mikal Bridges"
+    },
+    {
+        "team": "MIA",
+        "name": "Bam Adebayo"
+    },
+    {
+        "team": "BOS",
+        "name": "Payton Pritchard"
+    },
+    {
+        "team": "MIL",
+        "name": "Ryan Rollins"
+    },
+    {
+        "team": "LAC",
+        "name": "Kawhi Leonard"
+    },
+    {
+        "team": "CLE",
+        "name": "Evan Mobley"
+    },
+    {
+        "team": "TOR",
+        "name": "Immanuel Quickley"
+    },
+    {
+        "team": "MIN",
+        "name": "Jaden McDaniels"
+    },
+    {
+        "team": "CHO",
+        "name": "Kon Knueppel"
+    },
+    {
+        "team": "MIN",
+        "name": "Rudy Gobert"
+    },
+    {
+        "team": "SAC",
+        "name": "DeMar DeRozan"
+    },
+    {
+        "team": "NOP",
+        "name": "Saddiq Bey"
+    },
+    {
+        "team": "ATL",
+        "name": "Onyeka Okongwu"
+    },
+    {
+        "team": "CHO",
+        "name": "Miles Bridges"
+    },
+    {
+        "team": "SAS",
+        "name": "De'Aaron Fox"
+    },
+    {
+        "team": "NYK",
+        "name": "Karl-Anthony Towns"
+    },
+    {
+        "team": "SAS",
+        "name": "Devin Vassell"
+    },
+    {
+        "team": "MIN",
+        "name": "Donte DiVincenzo"
+    },
+    {
+        "team": "MIA",
+        "name": "Andrew Wiggins"
+    },
+    {
+        "team": "CHO",
+        "name": "Brandon Miller"
+    },
+    {
+        "team": "NYK",
+        "name": "Josh Hart"
+    },
+    {
+        "team": "SAS",
+        "name": "Stephon Castle"
+    },
+    {
+        "team": "ORL",
+        "name": "Anthony Black"
+    },
+    {
+        "team": "2TM",
+        "name": "CJ McCollum"
+    },
+    {
+        "team": "NOP",
+        "name": "Zion Williamson"
+    },
+    {
+        "team": "MIA",
+        "name": "Norman Powell"
+    },
+    {
+        "team": "DAL",
+        "name": "Naji Marshall"
+    },
+    {
+        "team": "PHI",
+        "name": "Quentin Grimes"
+    },
+    {
+        "team": "ORL",
+        "name": "Wendell Carter Jr."
+    },
+    {
+        "team": "CHI",
+        "name": "Matas Buzelis"
+    },
+    {
+        "team": "SAS",
+        "name": "Victor Wembanyama"
+    },
+    {
+        "team": "DAL",
+        "name": "Max Christie"
+    },
+    {
+        "team": "MIL",
+        "name": "A.J. Green"
+    },
+    {
+        "team": "SAC",
+        "name": "Russell Westbrook"
+    },
+    {
+        "team": "OKC",
+        "name": "Chet Holmgren"
+    },
+    {
+        "team": "MIA",
+        "name": "Davion Mitchell"
+    },
+    {
+        "team": "LAL",
+        "name": "Marcus Smart"
+    },
+    {
+        "team": "PHO",
+        "name": "Collin Gillespie"
+    },
+    {
+        "team": "GSW",
+        "name": "Brandin Podziemski"
+    },
+    {
+        "team": "2TM",
+        "name": "Nikola Vučević"
+    },
+    {
+        "team": "PHO",
+        "name": "Royce O'Neale"
+    },
+    {
+        "team": "LAL",
+        "name": "Rui Hachimura"
+    },
+    {
+        "team": "MIA",
+        "name": "Jaime Jaquez Jr."
+    },
+    {
+        "team": "DET",
+        "name": "Jalen Duren"
+    },
+    {
+        "team": "CHO",
+        "name": "LaMelo Ball"
+    },
+    {
+        "team": "BRK",
+        "name": "Nic Claxton"
+    },
+    {
+        "team": "DET",
+        "name": "Tobias Harris"
+    },
+    {
+        "team": "WAS",
+        "name": "Bub Carrington"
+    },
+    {
+        "team": "SAS",
+        "name": "Julian Champagnie"
+    },
+    {
+        "team": "UTA",
+        "name": "Ace Bailey"
+    },
+    {
+        "team": "GSW",
+        "name": "Draymond Green"
+    },
+    {
+        "team": "DET",
+        "name": "Duncan Robinson"
+    },
+    {
+        "team": "2TM",
+        "name": "Ayo Dosunmu"
+    },
+    {
+        "team": "LAC",
+        "name": "Kris Dunn"
+    },
+    {
+        "team": "POR",
+        "name": "Donovan Clingan"
+    },
+    {
+        "team": "LAL",
+        "name": "Deandre Ayton"
+    },
+    {
+        "team": "LAC",
+        "name": "John Collins"
+    },
+    {
+        "team": "BRK",
+        "name": "Noah Clowney"
+    },
+    {
+        "team": "CHI",
+        "name": "Tre Jones"
+    },
+    {
+        "team": "MIL",
+        "name": "Myles Turner"
+    },
+    {
+        "team": "CLE",
+        "name": "Jaylon Tyson"
+    },
+    {
+        "team": "CHI",
+        "name": "Isaac Okoro"
+    },
+    {
+        "team": "OKC",
+        "name": "Luguentz Dort"
+    },
+    {
+        "team": "DEN",
+        "name": "Tim Hardaway Jr."
+    },
+    {
+        "team": "OKC",
+        "name": "Cason Wallace"
+    },
+    {
+        "team": "SAC",
+        "name": "Maxime Raynaud"
+    },
+    {
+        "team": "MIA",
+        "name": "Pelle Larsson"
+    },
+    {
+        "team": "MEM",
+        "name": "Jaylen Wells"
+    },
+    {
+        "team": "HOU",
+        "name": "Reed Sheppard"
+    },
+    {
+        "team": "MIL",
+        "name": "Kyle Kuzma"
+    },
+    {
+        "team": "MIN",
+        "name": "Naz Reid"
+    },
+    {
+        "team": "CHO",
+        "name": "Moussa Diabaté"
+    },
+    {
+        "team": "DET",
+        "name": "Ausar Thompson"
+    },
+    {
+        "team": "HOU",
+        "name": "Tari Eason"
+    },
+    {
+        "team": "SAS",
+        "name": "Harrison Barnes"
+    },
+    {
+        "team": "MEM",
+        "name": "Cedric Coward"
+    },
+    {
+        "team": "NOP",
+        "name": "Jeremiah Fears"
+    },
+    {
+        "team": "UTA",
+        "name": "Isaiah Collier"
+    },
+    {
+        "team": "IND",
+        "name": "Jarace Walker"
+    },
+    {
+        "team": "GSW",
+        "name": "Moses Moody"
+    },
+    {
+        "team": "BOS",
+        "name": "Neemias Queta"
+    },
+    {
+        "team": "LAL",
+        "name": "Jake LaRavia"
+    },
+    {
+        "team": "SAC",
+        "name": "Nique Clifford"
+    },
+    {
+        "team": "NOP",
+        "name": "Derik Queen"
+    },
+    {
+        "team": "BOS",
+        "name": "Sam Hauser"
+    },
+    {
+        "team": "ORL",
+        "name": "Tristan Da Silva"
+    },
+    {
+        "team": "DEN",
+        "name": "Bruce Brown"
+    },
+    {
+        "team": "UTA",
+        "name": "Cody Williams"
+    },
+    {
+        "team": "BRK",
+        "name": "Terance Mann"
+    },
+    {
+        "team": "2TM",
+        "name": "Dennis Schröder"
+    },
+    {
+        "team": "MIL",
+        "name": "Bobby Portis"
+    },
+    {
+        "team": "WAS",
+        "name": "Tre Johnson"
+    },
+    {
+        "team": "SAC",
+        "name": "Precious Achiuwa"
+    },
+    {
+        "team": "MEM",
+        "name": "Cam Spencer"
+    },
+    {
+        "team": "PHI",
+        "name": "Dominick Barlow"
+    },
+    {
+        "team": "2TM",
+        "name": "Collin Sexton"
+    },
+    {
+        "team": "PHO",
+        "name": "Mark Williams"
+    },
+    {
+        "team": "UTA",
+        "name": "Brice Sensabaugh"
+    },
+    {
+        "team": "UTA",
+        "name": "Kyle Filipowski"
+    },
+    {
+        "team": "SAS",
+        "name": "Keldon Johnson"
+    },
+    {
+        "team": "2TM",
+        "name": "Khris Middleton"
+    },
+    {
+        "team": "DET",
+        "name": "Isaiah Stewart"
+    },
+    {
+        "team": "TOR",
+        "name": "Jamal Shead"
+    },
+    {
+        "team": "SAS",
+        "name": "Dylan Harper"
+    },
+    {
+        "team": "CHO",
+        "name": "Sion James"
+    },
+    {
+        "team": "PHO",
+        "name": "Jordan Goodwin"
+    },
+    {
+        "team": "2TM",
+        "name": "Kevin Huerter"
+    },
+    {
+        "team": "ATL",
+        "name": "Zaccharie Risacher"
+    },
+    {
+        "team": "CLE",
+        "name": "Dean Wade"
+    },
+    {
+        "team": "DAL",
+        "name": "Brandon Williams"
+    },
+    {
+        "team": "2TM",
+        "name": "Jock Landale"
+    },
+    {
+        "team": "DEN",
+        "name": "Spencer Jones"
+    },
+    {
+        "team": "MIA",
+        "name": "Kel'el Ware"
+    },
+    {
+        "team": "LAC",
+        "name": "Jordan Miller"
+    },
+    {
+        "team": "WAS",
+        "name": "Will Riley"
+    },
+    {
+        "team": "PHO",
+        "name": "Oso Ighodaro"
+    },
+    {
+        "team": "SAC",
+        "name": "Malik Monk"
+    },
+    {
+        "team": "TOR",
+        "name": "Sandro Mamukelashvili"
+    },
+    {
+        "team": "LAC",
+        "name": "Brook Lopez"
+    },
+    {
+        "team": "OKC",
+        "name": "Aaron Wiggins"
+    },
+    {
+        "team": "DAL",
+        "name": "Klay Thompson"
+    },
+    {
+        "team": "2TM",
+        "name": "Luke Kennard"
+    },
+    {
+        "team": "CHO",
+        "name": "Ryan Kalkbrenner"
+    },
+    {
+        "team": "2TM",
+        "name": "Vít Krejčí"
+    },
+    {
+        "team": "IND",
+        "name": "Ben Sheppard"
+    },
+    {
+        "team": "OKC",
+        "name": "Isaiah Joe"
+    },
+    {
+        "team": "MIL",
+        "name": "Gary Trent Jr."
+    },
+    {
+        "team": "SAS",
+        "name": "Luke Kornet"
+    },
+    {
+        "team": "IND",
+        "name": "Jay Huff"
+    },
+    {
+        "team": "BRK",
+        "name": "Drake Powell"
+    },
+    {
+        "team": "2TM",
+        "name": "Keon Ellis"
+    },
+    {
+        "team": "GSW",
+        "name": "Gui Santos"
+    },
+    {
+        "team": "TOR",
+        "name": "Ja'Kobe Walter"
+    },
+    {
+        "team": "CHI",
+        "name": "Patrick Williams"
+    },
+    {
+        "team": "2TM",
+        "name": "Walter Clayton"
+    },
+    {
+        "team": "DET",
+        "name": "Daniss Jenkins"
+    },
+    {
+        "team": "2TM",
+        "name": "Marvin Bagley III"
+    },
+    {
+        "team": "WAS",
+        "name": "Justin Champagnie"
+    },
+    {
+        "team": "GSW",
+        "name": "Will Richard"
+    },
+    {
+        "team": "DET",
+        "name": "Ron Holland"
+    },
+    {
+        "team": "LAC",
+        "name": "Kobe Sanders"
+    },
+    {
+        "team": "2TM",
+        "name": "Jose Alvarado"
+    },
+    {
+        "team": "MIL",
+        "name": "Jericho Sims"
+    },
+    {
+        "team": "NOP",
+        "name": "Yves Missi"
+    },
+    {
+        "team": "OKC",
+        "name": "Jaylin Williams"
+    },
+    {
+        "team": "NYK",
+        "name": "Mitchell Robinson"
+    },
+    {
+        "team": "PHI",
+        "name": "Andre Drummond"
+    },
+    {
+        "team": "DAL",
+        "name": "Ryan Nembhard"
+    },
+    {
+        "team": "PHO",
+        "name": "Ryan Dunn"
+    },
+    {
+        "team": "DET",
+        "name": "Caris LeVert"
+    },
+    {
+        "team": "POR",
+        "name": "Sidy Cissoko"
+    },
+    {
+        "team": "2TM",
+        "name": "Taylor Hendricks"
+    },
+    {
+        "team": "BRK",
+        "name": "Day'Ron Sharpe"
+    },
+    {
+        "team": "GSW",
+        "name": "Pat Spencer"
+    },
+    {
+        "team": "2TM",
+        "name": "Corey Kispert"
+    },
+    {
+        "team": "BOS",
+        "name": "Baylor Scheierman"
+    },
+    {
+        "team": "LAL",
+        "name": "Jaxson Hayes"
+    },
+    {
+        "team": "CLE",
+        "name": "Craig Porter Jr."
+    },
+    {
+        "team": "BOS",
+        "name": "Jordan Walsh"
+    },
+    {
+        "team": "NYK",
+        "name": "Jordan Clarkson"
+    },
+    {
+        "team": "DET",
+        "name": "Javonte Green"
+    },
+    {
+        "team": "LAC",
+        "name": "Nicolas Batum"
+    },
+    {
+        "team": "PHI",
+        "name": "Adem Bona"
+    },
+    {
+        "team": "HOU",
+        "name": "Josh Okogie"
+    },
+    {
+        "team": "LAL",
+        "name": "Jarred Vanderbilt"
+    },
+    {
+        "team": "2TM",
+        "name": "Jared McCain"
+    },
+    {
+        "team": "GSW",
+        "name": "Quinten Post"
+    },
+    {
+        "team": "POR",
+        "name": "Robert Williams"
+    },
+    {
+        "team": "MIA",
+        "name": "Simone Fontecchio"
+    },
+    {
+        "team": "2TM",
+        "name": "Rayan Rupert"
+    },
+    {
+        "team": "MIN",
+        "name": "Bones Hyland"
+    },
+    {
+        "team": "MIA",
+        "name": "Dru Smith"
+    },
+    {
+        "team": "BOS",
+        "name": "Luka Garza"
+    },
+    {
+        "team": "2TM",
+        "name": "Kobe Brown"
+    },
+    {
+        "team": "2TM",
+        "name": "Ochai Agbaji"
+    },
+    {
+        "team": "CLE",
+        "name": "Nae'Qwan Tomlin"
+    },
+    {
+        "team": "CHO",
+        "name": "Josh Green"
+    },
+    {
+        "team": "GSW",
+        "name": "Gary Payton II"
+    },
+    {
+        "team": "ATL",
+        "name": "Mouhamed Gueye"
+    },
+    {
+        "team": "PHI",
+        "name": "Justin Edwards"
+    },
+    {
+        "team": "ORL",
+        "name": "Goga Bitadze"
+    },
+    {
+        "team": "2TM",
+        "name": "Guerschon Yabusele"
+    },
+    {
+        "team": "NOP",
+        "name": "Micah Peavy"
+    },
+    {
+        "team": "2TM",
+        "name": "Rob Dillingham"
+    },
+    {
+        "team": "DAL",
+        "name": "Caleb Martin"
+    },
+    {
+        "team": "NOP",
+        "name": "Karlo Matković"
+    },
+    {
+        "team": "BOS",
+        "name": "Hugo González"
+    },
+    {
+        "team": "3TM",
+        "name": "Tyus Jones"
+    },
+    {
+        "team": "DAL",
+        "name": "Dwight Powell"
+    },
+    {
+        "team": "TOR",
+        "name": "Gradey Dick"
+    },
+    {
+        "team": "DET",
+        "name": "Paul Reed"
+    },
+    {
+        "team": "DEN",
+        "name": "Jonas Valančiūnas"
+    },
+    {
+        "team": "MIN",
+        "name": "Jaylen Clark"
+    },
+    {
+        "team": "ORL",
+        "name": "Noah Penda"
+    },
+    {
+        "team": "HOU",
+        "name": "Clint Capela"
+    },
+    {
+        "team": "CLE",
+        "name": "Thomas Bryant"
+    },
+    {
+        "team": "PHI",
+        "name": "Jabari Walker"
+    },
+    {
+        "team": "NYK",
+        "name": "Tyler Kolek"
+    },
+    {
+        "team": "SAS",
+        "name": "Carter Bryant"
+    },
+    {
+        "team": "NYK",
+        "name": "Mohamed Diawara"
+    },
+    {
+        "team": "TOR",
+        "name": "Jamison Battle"
+    }
+]

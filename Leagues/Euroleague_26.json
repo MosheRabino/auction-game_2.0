@@ -1,0 +1,837 @@
+[
+    {
+        "league": "Euroleague 26"
+    },
+    {
+        "team": "CZV",
+        "name": "C. MILLER-MCINTYRE"
+    },
+    {
+        "team": "ASM",
+        "name": "M. JAMES"
+    },
+    {
+        "team": "PAO",
+        "name": "K. NUNN"
+    },
+    {
+        "team": "DUB",
+        "name": "M. WRIGHT IV"
+    },
+    {
+        "team": "HTA",
+        "name": "E. BRYANT"
+    },
+    {
+        "team": "DUB",
+        "name": "D. BACON"
+    },
+    {
+        "team": "MTA",
+        "name": "J. HOARD"
+    },
+    {
+        "team": "EFS",
+        "name": "N. WEILER-BABB"
+    },
+    {
+        "team": "PAR",
+        "name": "S. BROWN"
+    },
+    {
+        "team": "ASM",
+        "name": "A. DIALLO"
+    },
+    {
+        "team": "OLY",
+        "name": "S. VEZENKOV"
+    },
+    {
+        "team": "PAR",
+        "name": "I. BONGA"
+    },
+    {
+        "team": "ZAL",
+        "name": "S. FRANCISCO"
+    },
+    {
+        "team": "PAO",
+        "name": "C. OSMAN"
+    },
+    {
+        "team": "BAR",
+        "name": "K. PUNTER"
+    },
+    {
+        "team": "CZV",
+        "name": "J. NWORA"
+    },
+    {
+        "team": "CZV",
+        "name": "C. MONEKE"
+    },
+    {
+        "team": "EA7",
+        "name": "S. SHIELDS"
+    },
+    {
+        "team": "BAY",
+        "name": "A. OBST"
+    },
+    {
+        "team": "FBB",
+        "name": "W. BALDWIN IV"
+    },
+    {
+        "team": "ASV",
+        "name": "G. WATSON"
+    },
+    {
+        "team": "ASM",
+        "name": "E. OKOBO"
+    },
+    {
+        "team": "BAR",
+        "name": "W. CLYBURN"
+    },
+    {
+        "team": "VIR",
+        "name": "C. EDWARDS"
+    },
+    {
+        "team": "KBA",
+        "name": "T. LUWAWU-CABARROT"
+    },
+    {
+        "team": "EA7",
+        "name": "Q. ELLIS"
+    },
+    {
+        "team": "FBB",
+        "name": "D. HALL"
+    },
+    {
+        "team": "OLY",
+        "name": "T. DORSEY"
+    },
+    {
+        "team": "BAR",
+        "name": "T. SHENGELIA"
+    },
+    {
+        "team": "BAR",
+        "name": "T. SATORANSKY"
+    },
+    {
+        "team": "HTA",
+        "name": "C. MALCOLM"
+    },
+    {
+        "team": "EA7",
+        "name": "Z. LEDAY"
+    },
+    {
+        "team": "MTA",
+        "name": "O. BRISSETT"
+    },
+    {
+        "team": "PAO",
+        "name": "J. HERNANGOMEZ"
+    },
+    {
+        "team": "EFS",
+        "name": "E. OSMANI"
+    },
+    {
+        "team": "RMB",
+        "name": "F. CAMPAZZO"
+    },
+    {
+        "team": "FBB",
+        "name": "T. BIBEROVIC"
+    },
+    {
+        "team": "ASM",
+        "name": "M. STRAZEL"
+    },
+    {
+        "team": "EFS",
+        "name": "I. CORDINIER"
+    },
+    {
+        "team": "HTA",
+        "name": "V. MICIC"
+    },
+    {
+        "team": "ZAL",
+        "name": "N. WILLIAMS-GOSS"
+    },
+    {
+        "team": "VBC",
+        "name": "K. TAYLOR"
+    },
+    {
+        "team": "OLY",
+        "name": "T. WALKUP"
+    },
+    {
+        "team": "HTA",
+        "name": "D. OTURU"
+    },
+    {
+        "team": "KBA",
+        "name": "T. FORREST"
+    },
+    {
+        "team": "FBB",
+        "name": "T. HORTON TUCKER"
+    },
+    {
+        "team": "FBB",
+        "name": "N. MELLI"
+    },
+    {
+        "team": "ASM",
+        "name": "J. BLOSSOMGAME"
+    },
+    {
+        "team": "ASV",
+        "name": "M. NDIAYE"
+    },
+    {
+        "team": "PAO",
+        "name": "J. GRANT"
+    },
+    {
+        "team": "ZAL",
+        "name": "M. WRIGHT"
+    },
+    {
+        "team": "DUB",
+        "name": "F. PETRUSEV"
+    },
+    {
+        "team": "DUB",
+        "name": "J. ANDERSON"
+    },
+    {
+        "team": "EFS",
+        "name": "J. LOYD"
+    },
+    {
+        "team": "BAY",
+        "name": "V. LUCIC"
+    },
+    {
+        "team": "CZV",
+        "name": "N. KALINIC"
+    },
+    {
+        "team": "HTA",
+        "name": "I. WAINRIGHT"
+    },
+    {
+        "team": "VBC",
+        "name": "J. MONTERO"
+    },
+    {
+        "team": "CZV",
+        "name": "S. OJELEYE"
+    },
+    {
+        "team": "MTA",
+        "name": "R. SORKIN"
+    },
+    {
+        "team": "RMB",
+        "name": "W. TAVARES"
+    },
+    {
+        "team": "MTA",
+        "name": "L. WALKER IV"
+    },
+    {
+        "team": "ZAL",
+        "name": "A. TUBELIS"
+    },
+    {
+        "team": "HTA",
+        "name": "A. BLAKENEY"
+    },
+    {
+        "team": "RMB",
+        "name": "M. HEZONJA"
+    },
+    {
+        "team": "EA7",
+        "name": "L. BOLMARO"
+    },
+    {
+        "team": "EA7",
+        "name": "A. BROOKS"
+    },
+    {
+        "team": "VIR",
+        "name": "D. ALSTON JR."
+    },
+    {
+        "team": "BAY",
+        "name": "I. MIKE"
+    },
+    {
+        "team": "PBB",
+        "name": "N. HIFI"
+    },
+    {
+        "team": "DUB",
+        "name": "M. KABENGELE"
+    },
+    {
+        "team": "KBA",
+        "name": "K. SIMMONS"
+    },
+    {
+        "team": "EA7",
+        "name": "M. GUDURIC"
+    },
+    {
+        "team": "EFS",
+        "name": "P. DOZIER"
+    },
+    {
+        "team": "OLY",
+        "name": "E. FOURNIER"
+    },
+    {
+        "team": "VIR",
+        "name": "S. NIANG"
+    },
+    {
+        "team": "EA7",
+        "name": "J. NEBO"
+    },
+    {
+        "team": "OLY",
+        "name": "N. MILUTINOV"
+    },
+    {
+        "team": "PBB",
+        "name": "J. RHODEN"
+    },
+    {
+        "team": "PAO",
+        "name": "K. SLOUKAS"
+    },
+    {
+        "team": "VIR",
+        "name": "L. VILDOZA"
+    },
+    {
+        "team": "RMB",
+        "name": "T. LYLES"
+    },
+    {
+        "team": "BAR",
+        "name": "J. VESELY"
+    },
+    {
+        "team": "KBA",
+        "name": "R. KURUCS"
+    },
+    {
+        "team": "VIR",
+        "name": "K. JALLOW"
+    },
+    {
+        "team": "ASM",
+        "name": "D. THEIS"
+    },
+    {
+        "team": "VBC",
+        "name": "B. BADIO"
+    },
+    {
+        "team": "HTA",
+        "name": "C. JONES"
+    },
+    {
+        "team": "RMB",
+        "name": "G. DECK"
+    },
+    {
+        "team": "ASV",
+        "name": "Z. SELJAAS"
+    },
+    {
+        "team": "PAR",
+        "name": "D. OSETKOWSKI"
+    },
+    {
+        "team": "CZV",
+        "name": "J. BUTLER"
+    },
+    {
+        "team": "EA7",
+        "name": "D. BOOKER"
+    },
+    {
+        "team": "VIR",
+        "name": "M. MORGAN"
+    },
+    {
+        "team": "MTA",
+        "name": "J. CLARK III"
+    },
+    {
+        "team": "VBC",
+        "name": "J. PRADILLA"
+    },
+    {
+        "team": "ASV",
+        "name": "T. HEURTEL"
+    },
+    {
+        "team": "MTA",
+        "name": "T. BLATT"
+    },
+    {
+        "team": "PAR",
+        "name": "T. JONES"
+    },
+    {
+        "team": "BAY",
+        "name": "J. JESSUP"
+    },
+    {
+        "team": "KBA",
+        "name": "M. DIAKITE"
+    },
+    {
+        "team": "PAR",
+        "name": "N. CALATHES"
+    },
+    {
+        "team": "OLY",
+        "name": "T. WARD"
+    },
+    {
+        "team": "VIR",
+        "name": "A. PAJOLA"
+    },
+    {
+        "team": "VBC",
+        "name": "N. REUVERS"
+    },
+    {
+        "team": "ASM",
+        "name": "N. MIROTIC"
+    },
+    {
+        "team": "EFS",
+        "name": "R. SMITS"
+    },
+    {
+        "team": "PBB",
+        "name": "J. ROBINSON"
+    },
+    {
+        "team": "ASV",
+        "name": "S. HARRISON"
+    },
+    {
+        "team": "VBC",
+        "name": "D. THOMPSON"
+    },
+    {
+        "team": "FBB",
+        "name": "N. DE COLO"
+    },
+    {
+        "team": "BAR",
+        "name": "J. PARRA"
+    },
+    {
+        "team": "DUB",
+        "name": "D. BERTANS"
+    },
+    {
+        "team": "FBB",
+        "name": "M. JANTUNEN"
+    },
+    {
+        "team": "ASV",
+        "name": "D. LIGHTY"
+    },
+    {
+        "team": "ZAL",
+        "name": "E. ULANOVAS"
+    },
+    {
+        "team": "VIR",
+        "name": "M. DIOUF"
+    },
+    {
+        "team": "ZAL",
+        "name": "D. SLEVA"
+    },
+    {
+        "team": "MTA",
+        "name": "T. LEAF"
+    },
+    {
+        "team": "ZAL",
+        "name": "A. BUTKEVICIUS"
+    },
+    {
+        "team": "ZAL",
+        "name": "M. LO"
+    },
+    {
+        "team": "RMB",
+        "name": "C. OKEKE"
+    },
+    {
+        "team": "ASV",
+        "name": "M. AJINCA"
+    },
+    {
+        "team": "KBA",
+        "name": "G. RADZEVICIUS"
+    },
+    {
+        "team": "PBB",
+        "name": "J. MORGAN"
+    },
+    {
+        "team": "ASM",
+        "name": "K. HAYES"
+    },
+    {
+        "team": "RMB",
+        "name": "B. FERNANDO"
+    },
+    {
+        "team": "PBB",
+        "name": "A. M'BAYE"
+    },
+    {
+        "team": "VBC",
+        "name": "O. MOORE"
+    },
+    {
+        "team": "PBB",
+        "name": "M. FAYE"
+    },
+    {
+        "team": "VBC",
+        "name": "B. KEY"
+    },
+    {
+        "team": "RMB",
+        "name": "T. MALEDON"
+    },
+    {
+        "team": "BAY",
+        "name": "W. GABRIEL"
+    },
+    {
+        "team": "FBB",
+        "name": "B. COLSON"
+    },
+    {
+        "team": "PBB",
+        "name": "Y. OUATTARA"
+    },
+    {
+        "team": "EFS",
+        "name": "S. LEE"
+    },
+    {
+        "team": "KBA",
+        "name": "K. DIOP"
+    },
+    {
+        "team": "BAY",
+        "name": "J. HOLLATZ"
+    },
+    {
+        "team": "RMB",
+        "name": "A. FELIZ"
+    },
+    {
+        "team": "VBC",
+        "name": "M. COSTELLO"
+    },
+    {
+        "team": "FBB",
+        "name": "K. BIRCH"
+    },
+    {
+        "team": "VIR",
+        "name": "A. SMAILAGIC"
+    },
+    {
+        "team": "PBB",
+        "name": "S. HERRERA"
+    },
+    {
+        "team": "EA7",
+        "name": "G. RICCI"
+    },
+    {
+        "team": "PAR",
+        "name": "F. NTILIKINA"
+    },
+    {
+        "team": "DUB",
+        "name": "A. ABASS"
+    },
+    {
+        "team": "PBB",
+        "name": "D. WILLIS"
+    },
+    {
+        "team": "PBB",
+        "name": "A. DOKOSSI"
+    },
+    {
+        "team": "PAO",
+        "name": "T. SHORTS"
+    },
+    {
+        "team": "BAY",
+        "name": "O. DA SILVA"
+    },
+    {
+        "team": "ASV",
+        "name": "A. TRAORE"
+    },
+    {
+        "team": "ASV",
+        "name": "B. MASSA"
+    },
+    {
+        "team": "VBC",
+        "name": "J. PUERTO"
+    },
+    {
+        "team": "RMB",
+        "name": "A. ABALDE"
+    },
+    {
+        "team": "BAR",
+        "name": "D. BRIZUELA"
+    },
+    {
+        "team": "BAY",
+        "name": "D. MCCORMACK"
+    },
+    {
+        "team": "KBA",
+        "name": "M. SPAGNOLO"
+    },
+    {
+        "team": "EFS",
+        "name": "K. JONES"
+    },
+    {
+        "team": "OLY",
+        "name": "D. HALL"
+    },
+    {
+        "team": "BAY",
+        "name": "X. RATHAN-MAYES"
+    },
+    {
+        "team": "OLY",
+        "name": "A. PETERS"
+    },
+    {
+        "team": "BAR",
+        "name": "M. CALE"
+    },
+    {
+        "team": "ZAL",
+        "name": "I. BRAZDEIKIS"
+    },
+    {
+        "team": "VIR",
+        "name": "D. HACKETT"
+    },
+    {
+        "team": "HTA",
+        "name": "J. MOTLEY"
+    },
+    {
+        "team": "CZV",
+        "name": "E. IZUNDU"
+    },
+    {
+        "team": "KBA",
+        "name": "M. NOWELL"
+    },
+    {
+        "team": "MTA",
+        "name": "J. DIBARTOLOMEO"
+    },
+    {
+        "team": "OLY",
+        "name": "K. PAPANIKOLAOU"
+    },
+    {
+        "team": "MTA",
+        "name": "M. SANTOS"
+    },
+    {
+        "team": "PBB",
+        "name": "L. CAVALIERE"
+    },
+    {
+        "team": "BAR",
+        "name": "W. HERNANGOMEZ"
+    },
+    {
+        "team": "DUB",
+        "name": "K. PREPELIC"
+    },
+    {
+        "team": "ASM",
+        "name": "N. NEDOVIC"
+    },
+    {
+        "team": "VBC",
+        "name": "N. SAKO"
+    },
+    {
+        "team": "BAY",
+        "name": "N. GIFFEY"
+    },
+    {
+        "team": "EFS",
+        "name": "S. HAZER"
+    },
+    {
+        "team": "PAO",
+        "name": "K. FARIED"
+    },
+    {
+        "team": "PAR",
+        "name": "A. LAKIC"
+    },
+    {
+        "team": "PAO",
+        "name": "K. MITOGLOU"
+    },
+    {
+        "team": "ASV",
+        "name": "B. VAUTIER"
+    },
+    {
+        "team": "CZV",
+        "name": "D. MOTIEJUNAS"
+    },
+    {
+        "team": "CZV",
+        "name": "O. DOBRIC"
+    },
+    {
+        "team": "RMB",
+        "name": "U. GARUBA"
+    },
+    {
+        "team": "BAR",
+        "name": "M. NORRIS"
+    },
+    {
+        "team": "PAO",
+        "name": "N. ROGKAVOPOULOS"
+    },
+    {
+        "team": "ZAL",
+        "name": "D. SIRVYDIS"
+    },
+    {
+        "team": "KBA",
+        "name": "C. FRISCH"
+    },
+    {
+        "team": "PAR",
+        "name": "A. POKUSEVSKI"
+    },
+    {
+        "team": "MTA",
+        "name": "W. RAYMAN"
+    },
+    {
+        "team": "HTA",
+        "name": "T. ODIASE"
+    },
+    {
+        "team": "FBB",
+        "name": "B. BOSTON JR."
+    },
+    {
+        "team": "OLY",
+        "name": "S. MCKISSIC"
+    },
+    {
+        "team": "FBB",
+        "name": "M. BIRSEN"
+    },
+    {
+        "team": "VBC",
+        "name": "S. DE LARREA"
+    },
+    {
+        "team": "DUB",
+        "name": "K. KAMENJAS"
+    },
+    {
+        "team": "CZV",
+        "name": "Y. DOS SANTOS"
+    },
+    {
+        "team": "RMB",
+        "name": "S. LLULL"
+    },
+    {
+        "team": "VIR",
+        "name": "A. DIARRA"
+    },
+    {
+        "team": "FBB",
+        "name": "O. BITIM"
+    },
+    {
+        "team": "FBB",
+        "name": "A. BACOT JR."
+    },
+    {
+        "team": "ZAL",
+        "name": "L. BIRUTIS"
+    },
+    {
+        "team": "VIR",
+        "name": "N. AKELE"
+    },
+    {
+        "team": "EFS",
+        "name": "C. SWIDER"
+    },
+    {
+        "team": "BAR",
+        "name": "J. MARCOS"
+    },
+    {
+        "team": "ASM",
+        "name": "T. TARPEY"
+    },
+    {
+        "team": "KBA",
+        "name": "R. VILLAR"
+    },
+    {
+        "team": "PAO",
+        "name": "P. KALAITZAKIS"
+    }
+]

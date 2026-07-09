@@ -366,6 +366,8 @@
             }
         }
 
+        const LEAGUES_DIR = 'Leagues/'; // individual league data files live in this subfolder (Leagues.json itself stays in the root)
+
         async function loadLeagueFilesAndShowSetup() {
             try {
                 const indexResponse = await fetch('Leagues.json');
@@ -379,7 +381,7 @@
 
             for (const fileName of availableLeagueFiles) {
                 try {
-                    const response = await fetch(fileName);
+                    const response = await fetch(LEAGUES_DIR + fileName);
                     if (!response.ok) continue;
                     leagueDataCache[fileName] = await response.json();
                 } catch (err) {
@@ -501,15 +503,7 @@
                                     .filter(cb => cb.checked).map(cb => cb.value)
             }));
 
-            const seenGlobal = new Set();
-            let pool = [];
-            resolvedSlots.forEach(slot => {
-                if (!slot.file) return;
-                getPlayersForFile(slot.file).filter(p => slot.checkedTeams.includes(p.team)).forEach(p => {
-                    const key = `${slot.file}_${p.name}_${p.team}`;
-                    if (!seenGlobal.has(key)) { seenGlobal.add(key); pool.push(p); }
-                });
-            });
+            const pool = buildPlayerPool(resolvedSlots);
             // Online rooms don't have a fixed player count up front - people just join - so this
             // is only a sanity check against the smallest possible game (2 players). The real
             // check against however many actually joined happens again when the host starts.
@@ -786,15 +780,7 @@
 
             settings = { ...DEFAULT_SETTINGS, ...lobby.settings };
 
-            const seenGlobal = new Set();
-            filteredPlayers = [];
-            (lobby.leagueSlots || []).forEach(slot => {
-                if (!slot.file) return;
-                getPlayersForFile(slot.file).filter(p => (slot.checkedTeams || []).includes(p.team)).forEach(p => {
-                    const key = `${slot.file}_${p.name}_${p.team}`;
-                    if (!seenGlobal.has(key)) { seenGlobal.add(key); filteredPlayers.push({ name: p.name, team: p.team }); }
-                });
-            });
+            filteredPlayers = buildPlayerPool(lobby.leagueSlots || []);
 
             const totalSlotsNeeded = claimedSeats.length * settings.teamSize;
             if (filteredPlayers.length < totalSlotsNeeded) {
@@ -919,6 +905,39 @@
             return result;
         }
 
+        // Builds the actual auction pool for one game/round from a set of resolved league
+        // slots ([{ file, checkedTeams }]). This is purely an in-memory, this-game-only view -
+        // it never writes back to leagueDataCache or any league JSON file.
+        // If the same player name shows up under more than one selected league/team (e.g. a
+        // player listed in two different leagues you've both included), they're merged into a
+        // single pool entry instead of appearing twice - so they get pulled with the same odds
+        // as everyone else, not double the odds. The merged entry keeps every team they were
+        // found under (e.g. "Team A / Team B") so it can be shown on their card during the game.
+        function buildPlayerPool(resolvedSlots) {
+            const seenLeagueTeam = new Set(); // file_name_team - avoids re-counting the same league/team combo twice
+            const byName = new Map();         // player name -> { name, teams: [...] }
+
+            resolvedSlots.forEach(slot => {
+                if (!slot.file) return;
+                const checked = slot.checkedTeams || [];
+                getPlayersForFile(slot.file).filter(p => checked.includes(p.team)).forEach(p => {
+                    const leagueTeamKey = `${slot.file}_${p.name}_${p.team}`;
+                    if (seenLeagueTeam.has(leagueTeamKey)) return;
+                    seenLeagueTeam.add(leagueTeamKey);
+
+                    if (!byName.has(p.name)) byName.set(p.name, { name: p.name, teams: [] });
+                    const entry = byName.get(p.name);
+                    if (!entry.teams.includes(p.team)) entry.teams.push(p.team);
+                });
+            });
+
+            return Array.from(byName.values()).map(e => ({
+                name: e.name,
+                team: e.teams.join(' / '), // display string used everywhere a single "team" is shown
+                teams: e.teams
+            }));
+        }
+
         // ---------- Lobby persistence (settings, names, league/team choices) ----------
         function saveLobbyToStorage() {
             const names = Array.from(document.querySelectorAll('.player-name-field')).map(f => f.value);
@@ -1000,19 +1019,29 @@
             while (leagueSlots.length < settings.numLeagues) leagueSlots.push({ file: '', checkedTeams: null });
             leagueSlots = leagueSlots.slice(0, settings.numLeagues);
 
+            // Auto-fill any empty slot with a league not already taken by another slot, so two
+            // slots never silently start out pointed at the same league.
+            leagueSlots.forEach((slot, i) => {
+                if (slot.file || !availableLeagueFiles.length) return;
+                const usedElsewhere = new Set(leagueSlots.filter((s, j) => j !== i).map(s => s.file).filter(Boolean));
+                slot.file = availableLeagueFiles.find(f => !usedElsewhere.has(f)) || availableLeagueFiles[i % availableLeagueFiles.length];
+            });
+
             const container = document.getElementById('leagueSlotsContainer');
             container.innerHTML = '';
 
             leagueSlots.forEach((slot, i) => {
-                if (!slot.file && availableLeagueFiles.length) {
-                    slot.file = availableLeagueFiles[i % availableLeagueFiles.length];
-                }
+                // A league already chosen in another slot is hidden from this slot's dropdown
+                // (its own current choice always stays visible/selected).
+                const usedElsewhere = new Set(leagueSlots.filter((s, j) => j !== i).map(s => s.file).filter(Boolean));
+                const optionsForThisSlot = availableLeagueFiles.filter(f => f === slot.file || !usedElsewhere.has(f));
+
                 const div = document.createElement('div');
                 div.className = 'panel league-slot';
                 div.innerHTML = `
                     <h2>ליגה ${i + 1}</h2>
                     <select onchange="onLeagueSlotChange(${i})">
-                        ${availableLeagueFiles.map(f => `<option value="${escapeHtml(f)}" ${f === slot.file ? 'selected' : ''}>${escapeHtml(getLeagueDisplayName(f))}</option>`).join('')}
+                        ${optionsForThisSlot.map(f => `<option value="${escapeHtml(f)}" ${f === slot.file ? 'selected' : ''}>${escapeHtml(getLeagueDisplayName(f))}</option>`).join('')}
                     </select>
                     <button class="toggle-all-btn" onclick="toggleAllTeamsInSlot(${i})">סמן/בטל הכל</button>
                     <div class="teams-toggle-list" id="teamsCheckboxes_${i}"></div>
@@ -1028,8 +1057,9 @@
             const select = document.querySelectorAll('#leagueSlotsContainer select')[i];
             leagueSlots[i].file = select.value;
             leagueSlots[i].checkedTeams = null; // reset to "all checked" for the newly picked league
-            renderTeamsForSlot(i);
-            saveLobbyToStorage();
+            // Full re-render (not just this slot) so every other slot's dropdown picks up the
+            // league this slot just freed up or took.
+            renderLeagueSlots();
         }
 
         function renderTeamsForSlot(i) {
@@ -1111,18 +1141,12 @@
                 return;
             }
 
-            const seenGlobal = new Set();
-            filteredPlayers = [];
-            leagueSlots.forEach((slot, i) => {
-                if (!slot.file) return;
-                const checked = Array.from(document.querySelectorAll(`.team-cb[data-slot="${i}"]`))
-                                      .filter(cb => cb.checked)
-                                      .map(cb => cb.value);
-                getPlayersForFile(slot.file).filter(p => checked.includes(p.team)).forEach(p => {
-                    const key = `${slot.file}_${p.name}_${p.team}`;
-                    if (!seenGlobal.has(key)) { seenGlobal.add(key); filteredPlayers.push({ name: p.name, team: p.team }); }
-                });
-            });
+            const resolvedSlots = leagueSlots.map((slot, i) => ({
+                file: slot.file,
+                checkedTeams: Array.from(document.querySelectorAll(`.team-cb[data-slot="${i}"]`))
+                                    .filter(cb => cb.checked).map(cb => cb.value)
+            }));
+            filteredPlayers = buildPlayerPool(resolvedSlots);
 
             const totalSlotsNeeded = players.length * settings.teamSize;
             if (filteredPlayers.length < totalSlotsNeeded) {
@@ -1174,22 +1198,12 @@
                 });
             });
 
-            const seenGlobal = new Set();
-            filteredPlayers = [];
-            leagueSlots.forEach((slot, i) => {
-                if (!slot.file) return;
-                const checked = Array.from(document.querySelectorAll(`.team-cb[data-slot="${i}"]`))
-                                      .filter(cb => cb.checked)
-                                      .map(cb => cb.value);
-                const playersInFile = getPlayersForFile(slot.file).filter(p => checked.includes(p.team));
-                playersInFile.forEach(p => {
-                    const key = `${slot.file}_${p.name}_${p.team}`;
-                    if (!seenGlobal.has(key)) {
-                        seenGlobal.add(key);
-                        filteredPlayers.push({ name: p.name, team: p.team });
-                    }
-                });
-            });
+            const resolvedSlots = leagueSlots.map((slot, i) => ({
+                file: slot.file,
+                checkedTeams: Array.from(document.querySelectorAll(`.team-cb[data-slot="${i}"]`))
+                                    .filter(cb => cb.checked).map(cb => cb.value)
+            }));
+            filteredPlayers = buildPlayerPool(resolvedSlots);
 
             const totalSlotsNeeded = players.length * settings.teamSize;
             if (filteredPlayers.length < totalSlotsNeeded) {
